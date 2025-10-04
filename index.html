@@ -1,9 +1,100 @@
 <html>
+  <head>
+    <style>
+      .added { background-color: #90EE90; }
+      .removed { background-color: #FFB6C1; text-decoration: line-through; }
+    </style>
+  </head>
   <body>
     <div id="container">
     </div>
 
     <script>
+     let allRevisions = [];
+     let revisionTexts = [];
+     let currentRevisionIndex = 0;
+     let pageTitle = '';
+
+     function diffText(oldText, newText) {
+       const oldLines = oldText.split('\n');
+       const newLines = newText.split('\n');
+       let result = '';
+
+       // Simple line-by-line diff
+       let i = 0, j = 0;
+       while (i < oldLines.length || j < newLines.length) {
+         if (i >= oldLines.length) {
+           result += `<span class="added">${newLines[j]}</span>\n`;
+           j++;
+         } else if (j >= newLines.length) {
+           result += `<span class="removed">${oldLines[i]}</span>\n`;
+           i++;
+         } else if (oldLines[i] === newLines[j]) {
+           result += oldLines[i] + '\n';
+           i++;
+           j++;
+         } else {
+           // Try to find matching line ahead
+           let foundInNew = newLines.slice(j + 1).indexOf(oldLines[i]);
+           let foundInOld = oldLines.slice(i + 1).indexOf(newLines[j]);
+
+           if (foundInNew !== -1 && (foundInOld === -1 || foundInNew < foundInOld)) {
+             result += `<span class="added">${newLines[j]}</span>\n`;
+             j++;
+           } else if (foundInOld !== -1) {
+             result += `<span class="removed">${oldLines[i]}</span>\n`;
+             i++;
+           } else {
+             result += `<span class="removed">${oldLines[i]}</span>\n`;
+             result += `<span class="added">${newLines[j]}</span>\n`;
+             i++;
+             j++;
+           }
+         }
+       }
+       return result;
+     }
+
+     function displayRevision() {
+       const text = revisionTexts[currentRevisionIndex];
+       let displayText;
+
+       if (currentRevisionIndex === 0) {
+         displayText = text;
+       } else {
+         const prevText = revisionTexts[currentRevisionIndex - 1];
+         displayText = diffText(prevText, text);
+       }
+
+       container.innerHTML = `
+         <div class="header">Article: ${pageTitle}</div>
+         <div class="header">Total number of edits: ${allRevisions.length}</div>
+         <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+         <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
+         <pre style="white-space: pre-wrap; word-wrap: break-word;">${displayText}</pre>
+       `;
+
+       document.getElementById('nextBtn').addEventListener('click', nextRevision);
+     }
+
+     async function nextRevision() {
+       if (currentRevisionIndex >= allRevisions.length - 1) return;
+
+       currentRevisionIndex++;
+
+       // Fetch content if we don't have it yet
+       if (!revisionTexts[currentRevisionIndex]) {
+         const revId = allRevisions[currentRevisionIndex].revid;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${revId}&prop=revisions&rvprop=content&format=json&origin=*`;
+         const contentResponse = await fetch(contentUrl);
+         const contentData = await contentResponse.json();
+         const contentPage = contentData.query.pages[Object.keys(contentData.query.pages)[0]];
+         revisionTexts[currentRevisionIndex] = contentPage.revisions[0]['*'];
+       }
+
+       displayRevision();
+     }
+
      async function fetchRandomArticleEdits() {
        const headers = {
          'User-Agent': 'MediaWiki REST API docs examples/0.1 (https://meta.wikimedia.org/wiki/User:APaskulin_(WMF))'
@@ -14,16 +105,15 @@
          const randomUrl = 'https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*';
          const randomResponse = await fetch(randomUrl);
          const randomData = await randomResponse.json();
-         const pageTitle = randomData.query.random[0].title;
+         pageTitle = randomData.query.random[0].title;
 
          container.innerHTML = `<div class="header">Loading edits for: ${pageTitle}...</div>`;
 
          // Fetch all revisions (up to 1000 with pagination)
-         let allRevisions = [];
          let continueToken = null;
 
          while (allRevisions.length < 1000) {
-           const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=revisions&rvlimit=500&format=json&origin=*${continueToken ? '&rvcontinue=' + continueToken : ''}`;
+           const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=revisions&rvlimit=500&rvdir=newer&format=json&origin=*${continueToken ? '&rvcontinue=' + continueToken : ''}`;
            const historyResponse = await fetch(historyUrl);
            const historyData = await historyResponse.json();
            const page = historyData.query.pages[Object.keys(historyData.query.pages)[0]];
@@ -39,20 +129,15 @@
            }
          }
 
-         // Get the original article text (oldest revision)
-         const oldestRevId = allRevisions[allRevisions.length - 1].revid;
-         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${oldestRevId}&prop=revisions&rvprop=content&format=json&origin=*`;
+         // Get the original article text (first revision)
+         const firstRevId = allRevisions[0].revid;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${firstRevId}&prop=revisions&rvprop=content&format=json&origin=*`;
          const contentResponse = await fetch(contentUrl);
          const contentData = await contentResponse.json();
          const contentPage = contentData.query.pages[Object.keys(contentData.query.pages)[0]];
-         const originalText = contentPage.revisions[0]['*'];
+         revisionTexts[0] = contentPage.revisions[0]['*'];
 
-         container.innerHTML = `
-           <div class="header">Article: ${pageTitle}</div>
-           <div class="header">Total number of edits: ${allRevisions.length}</div>
-           <div class="header">Original article text:</div>
-           <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText}</pre>
-         `;
+         displayRevision();
        } catch (error) {
          container.innerHTML = '<div class="header">Error loading data: ' + error.message + '</div>';
        }
