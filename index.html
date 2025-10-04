@@ -18,15 +18,40 @@
 
          container.innerHTML = `<div class="header">Loading edits for: ${pageTitle}...</div>`;
 
-         const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=revisions&rvlimit=max&format=json&origin=*`;
-         const historyResponse = await fetch(historyUrl);
-         const historyData = await historyResponse.json();
-         const page = historyData.query.pages[Object.keys(historyData.query.pages)[0]];
-         const totalEdits = page.revisions ? page.revisions.length : 0;
+         // Fetch all revisions (up to 1000 with pagination)
+         let allRevisions = [];
+         let continueToken = null;
+
+         while (allRevisions.length < 1000) {
+           const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=revisions&rvlimit=500&format=json&origin=*${continueToken ? '&rvcontinue=' + continueToken : ''}`;
+           const historyResponse = await fetch(historyUrl);
+           const historyData = await historyResponse.json();
+           const page = historyData.query.pages[Object.keys(historyData.query.pages)[0]];
+
+           if (page.revisions) {
+             allRevisions = allRevisions.concat(page.revisions);
+           }
+
+           if (historyData.continue && historyData.continue.rvcontinue && allRevisions.length < 1000) {
+             continueToken = historyData.continue.rvcontinue;
+           } else {
+             break;
+           }
+         }
+
+         // Get the original article text (oldest revision)
+         const oldestRevId = allRevisions[allRevisions.length - 1].revid;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${oldestRevId}&prop=revisions&rvprop=content&format=json&origin=*`;
+         const contentResponse = await fetch(contentUrl);
+         const contentData = await contentResponse.json();
+         const contentPage = contentData.query.pages[Object.keys(contentData.query.pages)[0]];
+         const originalText = contentPage.revisions[0]['*'];
 
          container.innerHTML = `
            <div class="header">Article: ${pageTitle}</div>
-           <div class="header">Total number of edits: ${totalEdits}</div>
+           <div class="header">Total number of edits: ${allRevisions.length}</div>
+           <div class="header">Original article text:</div>
+           <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText}</pre>
          `;
        } catch (error) {
          container.innerHTML = '<div class="header">Error loading data: ' + error.message + '</div>';
