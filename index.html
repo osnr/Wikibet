@@ -1,8 +1,8 @@
 <html>
   <head>
     <style>
-      .added { background-color: #90EE90; }
-      .removed { background-color: #FFB6C1; text-decoration: line-through; }
+      ins { background-color: #90EE90; text-decoration: none; }
+      del { background-color: #FFB6C1; }
     </style>
   </head>
   <body>
@@ -10,20 +10,35 @@
     </div>
 
     <script>
+     // Polyfill for CommonJS module.exports in browser
+     var module = { exports: {} };
+    </script>
+    <script src="vendor/htmldiff.js"></script>
+    <script>
+     const htmldiff = module.exports.default;
+
      let allRevisions = [];
      let revisionHtml = [];
      let currentRevisionIndex = 0;
      let pageTitle = '';
 
      function displayRevision() {
-       const html = revisionHtml[currentRevisionIndex];
+       let content;
+
+       if (currentRevisionIndex === 0) {
+         content = revisionHtml[0];
+       } else {
+         const oldHtml = revisionHtml[currentRevisionIndex - 1];
+         const newHtml = revisionHtml[currentRevisionIndex];
+         content = htmldiff.execute(oldHtml, newHtml);
+       }
 
        container.innerHTML = `
          <div class="header">Article: ${pageTitle}</div>
          <div class="header">Total number of edits: ${allRevisions.length}</div>
          <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
          <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
-         <div id="content">${html}</div>
+         <div id="content">${content}</div>
        `;
 
        document.getElementById('nextBtn').addEventListener('click', nextRevision);
