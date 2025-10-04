@@ -11,67 +11,19 @@
 
     <script>
      let allRevisions = [];
-     let revisionTexts = [];
+     let revisionHtml = [];
      let currentRevisionIndex = 0;
      let pageTitle = '';
 
-     function diffText(oldText, newText) {
-       const oldLines = oldText.split('\n');
-       const newLines = newText.split('\n');
-       let result = '';
-
-       // Simple line-by-line diff
-       let i = 0, j = 0;
-       while (i < oldLines.length || j < newLines.length) {
-         if (i >= oldLines.length) {
-           result += `<span class="added">${newLines[j]}</span>\n`;
-           j++;
-         } else if (j >= newLines.length) {
-           result += `<span class="removed">${oldLines[i]}</span>\n`;
-           i++;
-         } else if (oldLines[i] === newLines[j]) {
-           result += oldLines[i] + '\n';
-           i++;
-           j++;
-         } else {
-           // Try to find matching line ahead
-           let foundInNew = newLines.slice(j + 1).indexOf(oldLines[i]);
-           let foundInOld = oldLines.slice(i + 1).indexOf(newLines[j]);
-
-           if (foundInNew !== -1 && (foundInOld === -1 || foundInNew < foundInOld)) {
-             result += `<span class="added">${newLines[j]}</span>\n`;
-             j++;
-           } else if (foundInOld !== -1) {
-             result += `<span class="removed">${oldLines[i]}</span>\n`;
-             i++;
-           } else {
-             result += `<span class="removed">${oldLines[i]}</span>\n`;
-             result += `<span class="added">${newLines[j]}</span>\n`;
-             i++;
-             j++;
-           }
-         }
-       }
-       return result;
-     }
-
      function displayRevision() {
-       const text = revisionTexts[currentRevisionIndex];
-       let displayText;
-
-       if (currentRevisionIndex === 0) {
-         displayText = text;
-       } else {
-         const prevText = revisionTexts[currentRevisionIndex - 1];
-         displayText = diffText(prevText, text);
-       }
+       const html = revisionHtml[currentRevisionIndex];
 
        container.innerHTML = `
          <div class="header">Article: ${pageTitle}</div>
          <div class="header">Total number of edits: ${allRevisions.length}</div>
          <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
          <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
-         <pre style="white-space: pre-wrap; word-wrap: break-word;">${displayText}</pre>
+         <div id="content">${html}</div>
        `;
 
        document.getElementById('nextBtn').addEventListener('click', nextRevision);
@@ -83,13 +35,12 @@
        currentRevisionIndex++;
 
        // Fetch content if we don't have it yet
-       if (!revisionTexts[currentRevisionIndex]) {
+       if (!revisionHtml[currentRevisionIndex]) {
          const revId = allRevisions[currentRevisionIndex].revid;
-         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${revId}&prop=revisions&rvprop=content&format=json&origin=*`;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=parse&oldid=${revId}&format=json&origin=*`;
          const contentResponse = await fetch(contentUrl);
          const contentData = await contentResponse.json();
-         const contentPage = contentData.query.pages[Object.keys(contentData.query.pages)[0]];
-         revisionTexts[currentRevisionIndex] = contentPage.revisions[0]['*'];
+         revisionHtml[currentRevisionIndex] = contentData.parse.text['*'];
        }
 
        displayRevision();
@@ -129,13 +80,12 @@
            }
          }
 
-         // Get the original article text (first revision)
+         // Get the original article HTML (first revision)
          const firstRevId = allRevisions[0].revid;
-         const contentUrl = `https://en.wikipedia.org/w/api.php?action=query&revids=${firstRevId}&prop=revisions&rvprop=content&format=json&origin=*`;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=parse&oldid=${firstRevId}&format=json&origin=*`;
          const contentResponse = await fetch(contentUrl);
          const contentData = await contentResponse.json();
-         const contentPage = contentData.query.pages[Object.keys(contentData.query.pages)[0]];
-         revisionTexts[0] = contentPage.revisions[0]['*'];
+         revisionHtml[0] = contentData.parse.text['*'];
 
          displayRevision();
        } catch (error) {
