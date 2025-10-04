@@ -1,0 +1,39 @@
+<html>
+  <body>
+    <div id="container">
+    </div>
+
+    <script>
+     async function fetchRandomArticleEdits() {
+       const headers = {
+         'User-Agent': 'MediaWiki REST API docs examples/0.1 (https://meta.wikimedia.org/wiki/User:APaskulin_(WMF))'
+       };
+
+       try {
+         // First, get a random Wikipedia article
+         const randomUrl = 'https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*';
+         const randomResponse = await fetch(randomUrl);
+         const randomData = await randomResponse.json();
+         const pageTitle = randomData.query.random[0].title;
+
+         container.innerHTML = `<div class="header">Loading edits for: ${pageTitle}...</div>`;
+
+         const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=revisions&rvlimit=max&format=json&origin=*`;
+         const historyResponse = await fetch(historyUrl);
+         const historyData = await historyResponse.json();
+         const page = historyData.query.pages[Object.keys(historyData.query.pages)[0]];
+         const totalEdits = page.revisions ? page.revisions.length : 0;
+
+         container.innerHTML = `
+           <div class="header">Article: ${pageTitle}</div>
+           <div class="header">Total number of edits: ${totalEdits}</div>
+         `;
+       } catch (error) {
+         container.innerHTML = '<div class="header">Error loading data: ' + error.message + '</div>';
+       }
+     }
+
+     fetchRandomArticleEdits();
+    </script>
+  </body>
+</html>
