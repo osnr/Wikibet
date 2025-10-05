@@ -119,23 +119,21 @@
          const placedChips = document.querySelectorAll('.placed-chip');
          placedChips.forEach(chip => {
            const chipRect = chip.getBoundingClientRect();
-           const chipX = chipRect.left + chipRect.width / 2;
-           const chipY = chipRect.top + chipRect.height / 2;
 
-           // Temporarily hide chip to check element underneath
-           chip.style.display = 'none';
-           const elementBelow = document.elementFromPoint(chipX, chipY);
-           chip.style.display = '';
-
-           // Check if element or any parent is ins or del
+           // Check if chip intersects with any ins or del element
            let isOnChange = false;
-           let elem = elementBelow;
-           while (elem && elem !== document.body) {
-             if (elem.tagName === 'INS' || elem.tagName === 'DEL') {
+           const changes = document.querySelectorAll('ins, del');
+           for (const change of changes) {
+             const changeRect = change.getBoundingClientRect();
+
+             // Check if rectangles intersect
+             if (!(chipRect.right < changeRect.left ||
+                   chipRect.left > changeRect.right ||
+                   chipRect.bottom < changeRect.top ||
+                   chipRect.top > changeRect.bottom)) {
                isOnChange = true;
                break;
              }
-             elem = elem.parentElement;
            }
 
            // Create overlay animation
