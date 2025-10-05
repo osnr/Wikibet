@@ -537,8 +537,8 @@
          startDragging(chip, true, e);
        });
 
-       // Start countdown
-       if (currentRevisionIndex < allRevisions.length - 1) {
+       // Start countdown (only if not game over)
+       if (currentRevisionIndex < allRevisions.length - 1 && chipCount > 0) {
          clearInterval(countdownInterval);
          let count = countdownTime;
          document.getElementById('countdown').textContent = count;
