@@ -87,6 +87,8 @@
      #content {
          margin-top: 120px;
          padding: 1em;
+         user-select: none;
+         -webkit-user-select: none;
      }
      ins { background-color: #90EE90; text-decoration: none; }
      del { background-color: #FFB6C1; }
@@ -480,8 +482,31 @@
      }
      createGhostChip();
 
+     // Track if mouse is over content and last position
+     let isOverContent = false;
+     let lastMouseX = 0;
+     let lastMouseY = 0;
+     let lastShiftState = false;
+
+     function updateGhostChip(shiftKey) {
+       if (!isOverContent || chipCount <= 0 || draggedChip != null) {
+         ghostChip.style.display = 'none';
+         return;
+       }
+
+       const chipValue = shiftKey ? Math.min(5, chipCount) : 1;
+       ghostChip.textContent = chipValue;
+       ghostChip.style.display = 'flex';
+       ghostChip.style.left = (lastMouseX - 20) + 'px';
+       ghostChip.style.top = (lastMouseY - 20) + 'px';
+     }
+
      // Show/hide ghost chip on content hover
      content.addEventListener('pointermove', (e) => {
+       lastMouseX = e.pageX;
+       lastMouseY = e.pageY;
+       isOverContent = true;
+
        if (chipCount <= 0 || draggedChip != null) {
          ghostChip.style.display = 'none';
          return;
@@ -490,18 +515,32 @@
        // Check if hovering over an existing chip
        if (e.target.classList.contains('placed-chip') || e.target.closest('.placed-chip')) {
          ghostChip.style.display = 'none';
+         isOverContent = false;
          return;
        }
 
-       const chipValue = e.shiftKey ? Math.min(5, chipCount) : 1;
-       ghostChip.textContent = chipValue;
-       ghostChip.style.display = 'flex';
-       ghostChip.style.left = (e.pageX - 20) + 'px';
-       ghostChip.style.top = (e.pageY - 20) + 'px';
+       lastShiftState = e.shiftKey;
+       updateGhostChip(e.shiftKey);
      });
 
      content.addEventListener('pointerleave', () => {
+       isOverContent = false;
        ghostChip.style.display = 'none';
+     });
+
+     // Update ghost chip on Shift key press/release
+     document.addEventListener('keydown', (e) => {
+       if (e.key === 'Shift' && lastShiftState !== true) {
+         lastShiftState = true;
+         updateGhostChip(true);
+       }
+     });
+
+     document.addEventListener('keyup', (e) => {
+       if (e.key === 'Shift' && lastShiftState !== false) {
+         lastShiftState = false;
+         updateGhostChip(false);
+       }
      });
 
      // Click on content to place chip
@@ -513,6 +552,9 @@
        if (e.target.classList.contains('placed-chip') || e.target.closest('.placed-chip')) {
          return; // Let the chip's own handler deal with it
        }
+
+       // Prevent default behavior (especially text selection on Shift-click)
+       e.preventDefault();
 
        // Determine chip value based on Shift key
        const chipsToPlace = e.shiftKey ? Math.min(5, chipCount) : 1;
@@ -678,9 +720,10 @@
 
        const currentRev = allRevisions[currentRevisionIndex];
        const revisionDate = currentRev ? new Date(currentRev.timestamp).toLocaleString() : 'N/A';
+       const articleUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle)}`;
 
        headerInfo.innerHTML = `
-         <div>Article: ${pageTitle}</div>
+         <div>Article: <a href="${articleUrl}" target="_blank" rel="noopener noreferrer">${pageTitle}</a></div>
          <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
          <div>${revisionDate}</div>
        `;
