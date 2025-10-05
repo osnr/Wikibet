@@ -19,6 +19,42 @@
         font-weight: bold;
         color: #666;
       }
+      #chipTray {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .chip {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        cursor: grab;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+      .chip:active {
+        cursor: grabbing;
+      }
+      .chip.red { background-color: #dc3545; }
+      .placed-chip {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        pointer-events: none;
+      }
       #content {
         margin-top: 120px;
       }
@@ -28,6 +64,20 @@
   </head>
   <body>
     <div id="container">
+      <div id="header">
+        <div id="headerInfo">
+        </div>
+        <div id="chipTray">
+          <div class="chip red">1</div>
+          <div class="chip red">1</div>
+          <div class="chip red">1</div>
+          <div class="chip red">1</div>
+          <div class="chip red">1</div>
+        </div>
+        <div id="countdown">3</div>
+      </div>
+
+      <div id="content"></div>
     </div>
 
     <script>
@@ -43,34 +93,68 @@
      let currentRevisionIndex = 0;
      let pageTitle = '';
      let countdownInterval = null;
+     let draggedChip = null;
 
      function displayRevision() {
-       let content;
+       let contentHtml;
 
        if (currentRevisionIndex === 0) {
-         content = revisionHtml[0];
+         contentHtml = revisionHtml[0];
        } else {
          const oldHtml = revisionHtml[currentRevisionIndex - 1];
          const newHtml = revisionHtml[currentRevisionIndex];
-         content = htmldiff.execute(oldHtml, newHtml);
+         contentHtml = htmldiff.execute(oldHtml, newHtml);
        }
 
-       container.innerHTML = `
-         <div id="header">
-           <div>
-             <div class="header">Article: ${pageTitle}</div>
-             <div class="header">Total number of edits: ${allRevisions.length}</div>
-             <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
-             <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
-           </div>
-           <div id="countdown">3</div>
-         </div>
-         <div id="content">${content}</div>
+       headerInfo.innerHTML = `
+          <div>Article: ${pageTitle}</div>
+          <div>Total number of edits: ${allRevisions.length}</div>
+          <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+          <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
        `;
+       content.innerHTML = contentHtml;
 
        document.getElementById('nextBtn').addEventListener('click', () => {
          clearInterval(countdownInterval);
          nextRevision();
+       });
+
+       // Add pointer event drag functionality to chips
+       document.querySelectorAll('.chip').forEach(chip => {
+         chip.addEventListener('pointerdown', (e) => {
+           e.preventDefault();
+
+           // Remove chip from tray
+           const chipTray = document.getElementById('chipTray');
+           chip.remove();
+
+           // Create dragging chip
+           draggedChip = document.createElement('div');
+           draggedChip.className = 'placed-chip red';
+           draggedChip.textContent = '1';
+           draggedChip.style.left = (e.pageX - 20) + 'px';
+           draggedChip.style.top = (e.pageY - 20) + 'px';
+           document.body.appendChild(draggedChip);
+
+           // Capture pointer
+           document.body.setPointerCapture(e.pointerId);
+
+           const onPointerMove = (e) => {
+             if (draggedChip) {
+               draggedChip.style.left = (e.pageX - 20) + 'px';
+               draggedChip.style.top = (e.pageY - 20) + 'px';
+             }
+           };
+
+           const onPointerUp = (e) => {
+             document.body.removeEventListener('pointermove', onPointerMove);
+             document.body.removeEventListener('pointerup', onPointerUp);
+             draggedChip = null;
+           };
+
+           document.body.addEventListener('pointermove', onPointerMove);
+           document.body.addEventListener('pointerup', onPointerUp);
+         });
        });
 
        // Start countdown
@@ -137,7 +221,7 @@
          const randomData = await randomResponse.json();
          pageTitle = randomData.query.random[0].title;
 
-         container.innerHTML = `<div class="header">Loading edits for: ${pageTitle}...</div>`;
+         headerInfo.innerHTML = `Loading edits for: ${pageTitle}...`;
 
          // Fetch all revisions (up to 1000 with pagination)
          let continueToken = null;
@@ -168,7 +252,7 @@
 
          displayRevision();
        } catch (error) {
-         container.innerHTML = '<div class="header">Error loading data: ' + error.message + '</div>';
+         headerInfo.innerHTML = 'Error loading data: ' + error.message;
        }
      }
 
