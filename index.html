@@ -257,14 +257,14 @@
 
          document.getElementById('chipCount').textContent = chipCount;
 
-         // Wait 500ms before next chip
+         // Wait 300ms before next chip
          if (i < placedChips.length - 1) {
-           await new Promise(resolve => setTimeout(resolve, 500));
+           await new Promise(resolve => setTimeout(resolve, 300));
          }
        }
      }
 
-     function displayRevision() {
+     async function displayRevision() {
        let contentHtml;
 
        if (currentRevisionIndex === 0) {
@@ -282,7 +282,33 @@
        `;
        content.innerHTML = contentHtml;
 
-       scoreRound();
+       await scoreRound();
+
+       // Click on content to place chip
+       content.addEventListener('pointerdown', (e) => {
+         if (chipCount <= 0) return;
+         if (draggedChip != null) return;
+
+         // Decrement chip count
+         chipCount--;
+         document.getElementById('chipCount').textContent = chipCount;
+
+         // Create chip at click location
+         const chip = document.createElement('div');
+         chip.className = 'chip placed-chip red';
+         chip.textContent = '1';
+         chip.style.left = (e.pageX - 20) + 'px';
+         chip.style.top = (e.pageY - 20) + 'px';
+         chip.style.pointerEvents = 'auto';
+         chip.style.cursor = 'grab';
+         document.body.appendChild(chip);
+
+         // Add click handler for re-dragging
+         chip.addEventListener('pointerdown', (e) => {
+           e.stopPropagation();
+           startDragging(chip, false, e);
+         });
+       });
 
        // Shared drag logic
        function startDragging(chip, fromPile, e) {
@@ -638,6 +664,9 @@
          document.getElementById('countdownInput').value = countdownParam;
        }
        checkArticleEdits(articleParam);
+     } else {
+       // Load a random article on boot if no URL params
+       loadRandomArticle();
      }
     </script>
   </body>
