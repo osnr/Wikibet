@@ -69,7 +69,6 @@
      .chip.red { background-color: #dc3545; }
      .placed-chip {
          position: absolute;
-         pointer-events: none;
          cursor: grab;
          z-index: 999;
      }
@@ -466,8 +465,8 @@
        if (chipCount <= 0) return;
        if (draggedChip != null) return;
 
-       // Check if we clicked on an existing placed chip
-       if (e.target.classList.contains('placed-chip')) {
+       // Check if we clicked on an existing placed chip or inside one
+       if (e.target.classList.contains('placed-chip') || e.target.closest('.placed-chip')) {
          return; // Let the chip's own handler deal with it
        }
 
@@ -484,15 +483,14 @@
        chip.textContent = chipsToPlace;
        chip.style.left = (e.pageX - 20) + 'px';
        chip.style.top = (e.pageY - 20) + 'px';
-       chip.style.pointerEvents = 'auto';
        chip.style.cursor = 'grab';
-       document.body.appendChild(chip);
 
-       // Add click handler for re-dragging
        chip.addEventListener('pointerdown', (e) => {
          e.stopPropagation();
          startDragging(chip, false, e);
        });
+
+       document.body.appendChild(chip);
      });
 
      // Shared drag logic
@@ -504,7 +502,6 @@
 
        draggedChip = chip;
        draggedChip.style.zIndex = '1001'; // Above header while dragging
-       draggedChip.style.pointerEvents = 'none';
        document.body.style.cursor = 'grabbing';
 
        // Capture pointer to ensure we get all move events
@@ -534,7 +531,7 @@
 
          // Check if clicked on an existing placed chip (not moved)
          if (!hasMoved && !fromPile) {
-           const incrementAmount = isShiftKey ? Math.min(5, chipCount) : 1;
+           const incrementAmount = Math.min(chipCount, isShiftKey ? 5 : 1);
            draggedChip.textContent = parseInt(draggedChip.textContent) + incrementAmount;
            chipCount -= incrementAmount;
            document.getElementById('chipCount').textContent = chipCount;
@@ -601,7 +598,7 @@
        if (draggedChip != null) return;
 
        // Determine chip value based on Shift key
-       const chipsToPlace = e.shiftKey ? Math.min(5, chipCount) : 1;
+       const chipsToPlace = Math.min(chipCount, e.shiftKey ? 5 : 1);
 
        // Decrement chip count
        chipCount -= chipsToPlace;
@@ -613,12 +610,13 @@
        chip.textContent = chipsToPlace;
        chip.style.left = (e.pageX - 20) + 'px';
        chip.style.top = (e.pageY - 20) + 'px';
-       document.body.appendChild(chip);
 
-       // Add click handler for re-dragging
        chip.addEventListener('pointerdown', (e) => {
+         e.stopPropagation();
          startDragging(chip, false, e);
        });
+
+       document.body.appendChild(chip);
 
        startDragging(chip, true, e);
      });
