@@ -1,6 +1,19 @@
 <html>
   <head>
     <style>
+      #header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border-bottom: 1px solid #ccc;
+        padding: 10px;
+        z-index: 1000;
+      }
+      #content {
+        margin-top: 120px;
+      }
       ins { background-color: #90EE90; text-decoration: none; }
       del { background-color: #FFB6C1; }
     </style>
@@ -34,10 +47,12 @@
        }
 
        container.innerHTML = `
-         <div class="header">Article: ${pageTitle}</div>
-         <div class="header">Total number of edits: ${allRevisions.length}</div>
-         <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
-         <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
+         <div id="header">
+           <div class="header">Article: ${pageTitle}</div>
+           <div class="header">Total number of edits: ${allRevisions.length}</div>
+           <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+           <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
+         </div>
          <div id="content">${content}</div>
        `;
 
