@@ -142,7 +142,7 @@
       </div>
 
       <div class="inputGroup">
-        <label for="shareUrl">Shareable URL:</label>
+        <label for="shareUrl">Share this URL to play this exact game:</label>
         <input type="text" id="shareUrl" readonly>
       </div>
 
@@ -182,14 +182,25 @@
      let selectedArticle = null;
      let countdownTime = 3;
 
-     function scoreRound() {
+     // Cached audio objects
+     const coinSound = new Audio('res/coin.wav');
+     const hurtSound = new Audio('res/hurt.wav');
+
+     async function scoreRound() {
        // Check placed chips after content is rendered
        if (currentRevisionIndex == 0) {
          return;
        }
 
-       const placedChips = document.querySelectorAll('.placed-chip');
-       placedChips.forEach(chip => {
+       const placedChips = Array.from(document.querySelectorAll('.placed-chip'));
+
+       for (let i = 0; i < placedChips.length; i++) {
+         const chip = placedChips[i];
+
+         // Scroll chip into view if needed
+         const headerHeight = document.getElementById('header').offsetHeight;
+         chip.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
          const chipRect = chip.getBoundingClientRect();
 
          // Check if chip intersects with any ins or del element
@@ -208,9 +219,14 @@
            }
          }
 
+         // Play sound effect
+         const sound = isOnChange ? coinSound : hurtSound;
+         sound.currentTime = 0;
+         sound.play().catch(e => console.log('Audio play failed:', e));
+
          // Create overlay animation
          const overlay = document.createElement('div');
-         overlay.textContent = isOnChange ? '+1' : '-1';
+         overlay.textContent = isOnChange ? '+5' : '-1';
          overlay.style.position = 'absolute';
          overlay.style.left = chip.style.left;
          overlay.style.top = chip.style.top;
@@ -235,12 +251,17 @@
 
          // Update chip count and remove chip
          if (isOnChange) {
-           chipCount += 2;
+           chipCount += 5;
          }
          chip.remove();
-       });
 
-       document.getElementById('chipCount').textContent = chipCount;
+         document.getElementById('chipCount').textContent = chipCount;
+
+         // Wait 500ms before next chip
+         if (i < placedChips.length - 1) {
+           await new Promise(resolve => setTimeout(resolve, 500));
+         }
+       }
      }
 
      function displayRevision() {
@@ -258,16 +279,10 @@
           <div>Article: ${pageTitle}</div>
           <div>Total number of edits: ${allRevisions.length}</div>
           <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
-          <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
        `;
        content.innerHTML = contentHtml;
 
        scoreRound();
-
-       document.getElementById('nextBtn').addEventListener('click', () => {
-         clearInterval(countdownInterval);
-         nextRevision();
-       });
 
        // Shared drag logic
        function startDragging(chip, fromPile, e) {
