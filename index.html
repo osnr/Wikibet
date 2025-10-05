@@ -117,11 +117,56 @@
       .hidden {
         display: none !important;
       }
+      #gameOverScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        gap: 20px;
+      }
+      #gameOverScreen h2 {
+        color: white;
+        font-size: 48px;
+        margin: 0;
+      }
+      #gameOverScreen .inputGroup {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      #gameOverScreen button {
+        padding: 15px 30px;
+        font-size: 18px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #gameOverScreen button:hover {
+        background-color: #218838;
+      }
     </style>
   </head>
   <body>
+    <div id="gameOverScreen" class="hidden">
+      <h2>Game Over!</h2>
+      <div class="inputGroup">
+        <label for="insertChipsInput">Insert chips to continue:</label>
+        <input type="number" id="insertChipsInput" value="5" min="1" max="20">
+      </div>
+      <button id="continueBtn">Continue</button>
+    </div>
+
     <div id="startScreen">
-      <h1>Wikipedia Edit Roulette</h1>
+      <h1>Wikipedia Edit Bet</h1>
 
       <div class="inputGroup">
         <label for="articleInput">Article name:</label>
@@ -182,9 +227,42 @@
      let selectedArticle = null;
      let countdownTime = 3;
 
-     // Cached audio objects
-     const coinSound = new Audio('res/coin.wav');
-     const hurtSound = new Audio('res/hurt.wav');
+     // Web Audio API setup for concurrent sound effects
+     const audioCtx = new AudioContext();
+     let coinBuffer = null;
+     let hurtBuffer = null;
+
+     // Load audio buffers
+     async function loadAudioBuffers() {
+       try {
+         const [coinResp, hurtResp] = await Promise.all([
+           fetch('res/coin.wav'),
+           fetch('res/hurt.wav')
+         ]);
+         const [coinArrayBuffer, hurtArrayBuffer] = await Promise.all([
+           coinResp.arrayBuffer(),
+           hurtResp.arrayBuffer()
+         ]);
+         [coinBuffer, hurtBuffer] = await Promise.all([
+           audioCtx.decodeAudioData(coinArrayBuffer),
+           audioCtx.decodeAudioData(hurtArrayBuffer)
+         ]);
+       } catch (e) {
+         console.log('Failed to load audio:', e);
+       }
+     }
+
+     // Play sound using AudioBuffer
+     function playSound(buffer) {
+       if (!buffer) return;
+       const source = audioCtx.createBufferSource();
+       source.buffer = buffer;
+       source.connect(audioCtx.destination);
+       source.start();
+     }
+
+     // Load audio on startup
+     loadAudioBuffers();
 
      async function scoreRound() {
        // Check placed chips after content is rendered
@@ -219,14 +297,15 @@
            }
          }
 
+         // Get chip value
+         const chipValue = parseInt(chip.textContent);
+
          // Play sound effect
-         const sound = isOnChange ? coinSound : hurtSound;
-         sound.currentTime = 0;
-         sound.play().catch(e => console.log('Audio play failed:', e));
+         playSound(isOnChange ? coinBuffer : hurtBuffer);
 
          // Create overlay animation
          const overlay = document.createElement('div');
-         overlay.textContent = isOnChange ? '+5' : '-1';
+         overlay.textContent = isOnChange ? `+${chipValue * 5}` : `-${chipValue}`;
          overlay.style.position = 'absolute';
          overlay.style.left = chip.style.left;
          overlay.style.top = chip.style.top;
@@ -251,7 +330,7 @@
 
          // Update chip count and remove chip
          if (isOnChange) {
-           chipCount += 5;
+           chipCount += chipValue * 5;
          }
          chip.remove();
 
@@ -261,6 +340,12 @@
          if (i < placedChips.length - 1) {
            await new Promise(resolve => setTimeout(resolve, 300));
          }
+       }
+
+       // Check if game over
+       if (chipCount === 0) {
+         clearInterval(countdownInterval);
+         document.getElementById('gameOverScreen').classList.remove('hidden');
        }
      }
 
@@ -325,10 +410,19 @@
          // Capture pointer to ensure we get all move events
          e.target.setPointerCapture(e.pointerId);
 
+         let hasMoved = false;
+         const startX = e.pageX;
+         const startY = e.pageY;
+
          const onPointerMove = (e) => {
            if (draggedChip) {
              draggedChip.style.left = (e.pageX - 20) + 'px';
              draggedChip.style.top = (e.pageY - 20) + 'px';
+
+             // Check if moved more than a few pixels
+             if (Math.abs(e.pageX - startX) > 5 || Math.abs(e.pageY - startY) > 5) {
+               hasMoved = true;
+             }
            }
          };
 
@@ -336,6 +430,32 @@
            document.body.removeEventListener('pointermove', onPointerMove);
            document.body.removeEventListener('pointerup', onPointerUp);
            document.body.style.cursor = '';
+
+           // Check if clicked on an existing placed chip (not moved)
+           if (!hasMoved && !fromPile) {
+             // Find if there's another chip at this location
+             const placedChips = document.querySelectorAll('.placed-chip');
+             let targetChip = null;
+
+             for (const otherChip of placedChips) {
+               if (otherChip === draggedChip) continue;
+               const rect = otherChip.getBoundingClientRect();
+               if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                 targetChip = otherChip;
+                 break;
+               }
+             }
+
+             if (targetChip) {
+               // Merge chips: increment target value
+               const currentValue = parseInt(targetChip.textContent);
+               targetChip.textContent = currentValue + 1;
+               draggedChip.remove();
+               draggedChip = null;
+               return;
+             }
+           }
 
            // Check if pointer is inside header
            const header = document.getElementById('header');
@@ -351,11 +471,32 @@
                draggedChip.remove();
              }
            } else {
-             // Dropped outside header - make it stay
-             if (draggedChip) {
-               draggedChip.style.pointerEvents = 'auto';
-               draggedChip.style.zIndex = '999'; // Below header when placed
-               draggedChip.style.cursor = 'grab';
+             // Check if dropped on another chip
+             const placedChips = document.querySelectorAll('.placed-chip');
+             let targetChip = null;
+
+             for (const otherChip of placedChips) {
+               if (otherChip === draggedChip) continue;
+               const rect = otherChip.getBoundingClientRect();
+               if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                 targetChip = otherChip;
+                 break;
+               }
+             }
+
+             if (targetChip) {
+               // Merge chips: increment target value
+               const currentValue = parseInt(targetChip.textContent);
+               targetChip.textContent = currentValue + 1;
+               draggedChip.remove();
+             } else {
+               // Dropped outside header - make it stay
+               if (draggedChip) {
+                 draggedChip.style.pointerEvents = 'auto';
+                 draggedChip.style.zIndex = '999'; // Below header when placed
+                 draggedChip.style.cursor = 'grab';
+               }
              }
            }
 
@@ -624,6 +765,31 @@
          headerInfo.innerHTML = 'Error loading data: ' + error.message;
        }
      }
+
+     // Event listener for game over screen
+     document.getElementById('continueBtn').addEventListener('click', () => {
+       const insertChips = parseInt(document.getElementById('insertChipsInput').value);
+       chipCount += insertChips;
+       document.getElementById('chipCount').textContent = chipCount;
+       document.getElementById('gameOverScreen').classList.add('hidden');
+
+       // Restart countdown
+       if (currentRevisionIndex < allRevisions.length - 1) {
+         clearInterval(countdownInterval);
+         let count = countdownTime;
+         document.getElementById('countdown').textContent = count;
+
+         countdownInterval = setInterval(() => {
+           count--;
+           if (count > 0) {
+             document.getElementById('countdown').textContent = count;
+           } else {
+             clearInterval(countdownInterval);
+             nextRevision();
+           }
+         }, 1000);
+       }
+     });
 
      // Event listeners for start screen
      document.getElementById('articleInput').addEventListener('input', (e) => {
