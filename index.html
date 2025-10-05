@@ -114,6 +114,66 @@
        `;
        content.innerHTML = contentHtml;
 
+       // Check placed chips after content is rendered
+       if (currentRevisionIndex > 0) {
+         const placedChips = document.querySelectorAll('.placed-chip');
+         placedChips.forEach(chip => {
+           const chipRect = chip.getBoundingClientRect();
+           const chipX = chipRect.left + chipRect.width / 2;
+           const chipY = chipRect.top + chipRect.height / 2;
+
+           // Temporarily hide chip to check element underneath
+           chip.style.display = 'none';
+           const elementBelow = document.elementFromPoint(chipX, chipY);
+           chip.style.display = '';
+
+           // Check if element or any parent is ins or del
+           let isOnChange = false;
+           let elem = elementBelow;
+           while (elem && elem !== document.body) {
+             if (elem.tagName === 'INS' || elem.tagName === 'DEL') {
+               isOnChange = true;
+               break;
+             }
+             elem = elem.parentElement;
+           }
+
+           // Create overlay animation
+           const overlay = document.createElement('div');
+           overlay.textContent = isOnChange ? '+1' : '-1';
+           overlay.style.position = 'absolute';
+           overlay.style.left = chip.style.left;
+           overlay.style.top = chip.style.top;
+           overlay.style.fontSize = '24px';
+           overlay.style.fontWeight = 'bold';
+           overlay.style.color = isOnChange ? 'green' : 'red';
+           overlay.style.zIndex = '1002';
+           overlay.style.pointerEvents = 'none';
+           overlay.style.transition = 'opacity 2s, transform 2s';
+           overlay.style.transform = 'translateY(0)';
+           document.body.appendChild(overlay);
+
+           // Animate and remove
+           setTimeout(() => {
+             overlay.style.opacity = '0';
+             overlay.style.transform = 'translateY(-20px)';
+           }, 0);
+
+           setTimeout(() => {
+             overlay.remove();
+           }, 2000);
+
+           // Update chip count and remove chip
+           if (isOnChange) {
+             chipCount += 2;
+           }
+           chip.remove();
+         });
+
+         document.getElementById('chipCount').textContent = chipCount;
+         chipPile.style.visibility = chipCount > 0 ? 'visible' : 'hidden';
+       }
+
        document.getElementById('nextBtn').addEventListener('click', () => {
          clearInterval(countdownInterval);
          nextRevision();
@@ -225,19 +285,19 @@
        }
 
        // Scroll to first change if not the first revision
-       if (currentRevisionIndex > 0) {
-         setTimeout(() => {
-           const firstChange = document.querySelector('ins, del');
-           if (firstChange) {
-             const headerHeight = document.getElementById('header').offsetHeight;
-             const elementPosition = firstChange.getBoundingClientRect().top + window.scrollY;
-             window.scrollTo({
-               top: elementPosition - headerHeight - 20,
-               behavior: 'smooth'
-             });
-           }
-         }, 0);
-       }
+       // if (currentRevisionIndex > 0) {
+       //   setTimeout(() => {
+       //     const firstChange = document.querySelector('ins, del');
+       //     if (firstChange) {
+       //       const headerHeight = document.getElementById('header').offsetHeight;
+       //       const elementPosition = firstChange.getBoundingClientRect().top + window.scrollY;
+       //       window.scrollTo({
+       //         top: elementPosition - headerHeight - 20,
+       //         behavior: 'smooth'
+       //       });
+       //     }
+       //   }, 0);
+       // }
      }
 
      async function nextRevision() {
