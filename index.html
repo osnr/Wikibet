@@ -629,10 +629,13 @@
          contentHtml = htmldiff.execute(oldHtml, newHtml);
        }
 
+       const currentRev = allRevisions[currentRevisionIndex];
+       const revisionDate = currentRev ? new Date(currentRev.timestamp).toLocaleString() : 'N/A';
+
        headerInfo.innerHTML = `
          <div>Article: ${pageTitle}</div>
-         <div>Total number of edits: ${allRevisions.length}</div>
          <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+         <div>${revisionDate}</div>
        `;
        content.innerHTML = contentHtml;
 
