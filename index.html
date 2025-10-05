@@ -1,163 +1,222 @@
 <html>
   <head>
     <style>
-      #header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: rgba(255, 255, 255, 0.9);
-        border-bottom: 1px solid #ccc;
-        padding: 10px;
-        z-index: 1000;
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-      }
-      #countdown {
-        font-size: 48px;
-        font-weight: bold;
-        color: #666;
-      }
-      #chipTray {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-      .chip {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 3px solid white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: white;
-        cursor: grab;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      }
-      .chip:active {
-        cursor: grabbing;
-      }
-      .chip.red { background-color: #dc3545; }
-      .placed-chip {
-        position: absolute;
-        pointer-events: none;
-        cursor: grab;
-        z-index: 999;
-      }
-      #chipPile {
-        position: relative;
-      }
-      #chipCount {
-        font-size: 24px;
-      }
-      #content {
-        margin-top: 120px;
-      }
-      ins { background-color: #90EE90; text-decoration: none; }
-      del { background-color: #FFB6C1; }
+     #header {
+         position: fixed;
+         top: 0;
+         left: 0;
+         right: 0;
+         background-color: rgba(255, 255, 255, 0.9);
+         border-bottom: 1px solid #ccc;
+         padding: 10px;
+         z-index: 1000;
+         display: flex;
+         justify-content: space-between;
+         align-items: start;
+     }
+     #countdown {
+         font-size: 48px;
+         font-weight: bold;
+         color: #666;
+     }
+     #gameControls {
+         display: flex;
+         align-items: center;
+         gap: 10px;
+     }
+     #gameControls button {
+         padding: 8px 16px;
+         font-size: 14px;
+         border-radius: 5px;
+         border: 1px solid #ccc;
+         background-color: white;
+         cursor: pointer;
+     }
+     #gameControls button:hover {
+         background-color: #f0f0f0;
+     }
+     #chipTray {
+         position: absolute;
+         left: 50%;
+         transform: translateX(-50%);
+         display: flex;
+         gap: 10px;
+         align-items: center;
+     }
+     .chip {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         border: 3px solid white;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-weight: bold;
+         color: white;
+         cursor: grab;
+         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+     }
+     .chip:active {
+         cursor: grabbing;
+     }
+     .chip.red { background-color: #dc3545; }
+     .placed-chip {
+         position: absolute;
+         pointer-events: none;
+         cursor: grab;
+         z-index: 999;
+     }
+     #chipPile {
+         position: relative;
+     }
+     #chipCount {
+         font-size: 24px;
+     }
+     #content {
+         margin-top: 120px;
+     }
+     ins { background-color: #90EE90; text-decoration: none; }
+     del { background-color: #FFB6C1; }
 
-      #startScreen {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        gap: 20px;
-        padding: 20px;
-      }
-      #startScreen h1 {
-        margin-bottom: 20px;
-      }
-      #startScreen input, #startScreen button {
-        padding: 10px 15px;
-        font-size: 16px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-      }
-      #startScreen input {
-        width: 300px;
-      }
-      #startScreen button {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-      #startScreen button:hover {
-        background-color: #0056b3;
-      }
-      #startScreen button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-      .inputGroup {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        width: 300px;
-      }
-      .inputGroup label {
-        font-weight: bold;
-      }
-      #articleInfo {
-        color: #666;
-        font-style: italic;
-      }
-      #shareUrl {
-        width: 400px;
-        font-size: 14px;
-        background-color: #f5f5f5;
-      }
-      .hidden {
-        display: none !important;
-      }
-      #gameOverScreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.8);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-        gap: 20px;
-      }
-      #gameOverScreen h2 {
-        color: white;
-        font-size: 48px;
-        margin: 0;
-      }
-      #gameOverScreen .inputGroup {
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-      }
-      #gameOverScreen button {
-        padding: 15px 30px;
-        font-size: 18px;
-        background-color: #28a745;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      #gameOverScreen button:hover {
-        background-color: #218838;
-      }
+     #startScreen {
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         min-height: 100vh;
+         gap: 20px;
+         padding: 20px;
+     }
+     #startScreen h1 {
+         margin-bottom: 20px;
+     }
+     #startScreen input, #startScreen button {
+         padding: 10px 15px;
+         font-size: 16px;
+         border-radius: 5px;
+         border: 1px solid #ccc;
+     }
+     #startScreen input {
+         width: 300px;
+     }
+     #startScreen button {
+         background-color: #007bff;
+         color: white;
+         border: none;
+         cursor: pointer;
+     }
+     #startScreen button:hover {
+         background-color: #0056b3;
+     }
+     #startScreen button:disabled {
+         background-color: #ccc;
+         cursor: not-allowed;
+     }
+     .inputGroup {
+         display: flex;
+         flex-direction: column;
+         gap: 10px;
+         width: 300px;
+         border-radius: 10px;
+     }
+     .inputGroup label {
+         font-weight: bold;
+     }
+     #articleInfo {
+         color: #666;
+         font-style: italic;
+     }
+     #shareUrl {
+         width: 400px;
+         font-size: 14px;
+         background-color: #f5f5f5;
+     }
+     .hidden {
+         display: none !important;
+     }
+     #gameOverScreen {
+         position: fixed;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+         background-color: rgba(0, 0, 0, 0.8);
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         z-index: 2000;
+         gap: 20px;
+     }
+     #gameOverScreen h2 {
+         color: white;
+         font-size: 48px;
+         margin: 0;
+     }
+     #gameOverScreen .inputGroup {
+         background-color: white;
+         padding: 20px;
+     }
+     #gameOverScreen button {
+         padding: 15px 30px;
+         font-size: 18px;
+         background-color: #28a745;
+         color: white;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+     }
+     #gameOverScreen button:hover {
+         background-color: #218838;
+     }
+     #endGameScreen {
+         position: fixed;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+         background-color: rgba(0, 0, 0, 0.8);
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         z-index: 2000;
+         gap: 20px;
+     }
+     #endGameScreen h2 {
+         color: white;
+         font-size: 48px;
+         margin: 0;
+     }
+     #endGameScreen .stats {
+         background-color: white;
+         padding: 30px;
+         border-radius: 10px;
+         font-size: 18px;
+     }
+     #endGameScreen .stats div {
+         margin: 10px 0;
+     }
+     #endGameScreen .stats div:last-child {
+         font-size: 30px;
+     }
+     #endGameScreen button {
+         padding: 15px 30px;
+         font-size: 18px;
+         background-color: #007bff;
+         color: white;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+     }
+     #endGameScreen button:hover {
+         background-color: #0056b3;
+     }
     </style>
   </head>
   <body>
     <div id="gameOverScreen" class="hidden">
-      <h2>Game Over!</h2>
+      <h2>Game over!</h2>
       <div class="inputGroup">
         <label for="insertChipsInput">Insert chips to continue:</label>
         <input type="number" id="insertChipsInput" value="5" min="1" max="20">
@@ -165,8 +224,28 @@
       <button id="continueBtn">Continue</button>
     </div>
 
+    <div id="endGameScreen" class="hidden">
+      <h2>Game summary</h2>
+      <div class="stats">
+        <div><strong>Article:</strong> <span id="endArticle"></span></div>
+        <div><strong>Current revision:</strong> <span id="endRevision"></span></div>
+        <div><strong>Revision date:</strong> <span id="endRevisionDate"></span></div>
+        <hr>
+        <div><strong>Total chips inserted:</strong> <span id="endChipsInserted"></span></div>
+        <div><strong>Total chips won:</strong> <span id="endChipsWon"></span></div>
+        <div><strong>Current chips:</strong> <span id="endCurrentChips"></span></div>
+        <div><strong>Net gain/loss:</strong> <span id="endNetGain"></span></div>
+      </div>
+      <button id="returnToStartBtn">Return to start</button>
+    </div>
+
     <div id="startScreen">
       <h1>WikiEditBet</h1>
+
+      <div>
+        Click on the article to place chips to bet on where you think edits
+        will happen in the next round.
+      </div>
 
       <div class="inputGroup">
         <label for="articleInput">Article name:</label>
@@ -183,7 +262,7 @@
 
       <div class="inputGroup">
         <label for="countdownInput">Round time (seconds):</label>
-        <input type="number" id="countdownInput" value="3" min="1" max="30">
+        <input type="number" id="countdownInput" value="4" min="1" max="30">
       </div>
 
       <div class="inputGroup">
@@ -203,7 +282,11 @@
             <span id="chipCount">5</span>
           </div>
         </div>
-        <div id="countdown">3</div>
+        <div id="gameControls">
+          <button id="endGameBtn">End Game</button>
+          <button id="pauseBtn">Pause</button>
+          <div id="countdown">3</div>
+        </div>
       </div>
 
       <div id="content"></div>
@@ -226,26 +309,35 @@
      let chipCount = 5;
      let selectedArticle = null;
      let countdownTime = 3;
+     let isPaused = false;
+     let pausedCountdown = 0;
+     let totalChipsInserted = 0;
+     let totalChipsWon = 0;
+     let startingChips = 5;
 
      // Web Audio API setup for concurrent sound effects
      const audioCtx = new AudioContext();
      let coinBuffer = null;
      let hurtBuffer = null;
+     let selectBuffer = null;
 
      // Load audio buffers
      async function loadAudioBuffers() {
        try {
-         const [coinResp, hurtResp] = await Promise.all([
+         const [coinResp, hurtResp, selectResp] = await Promise.all([
            fetch('res/coin.wav'),
-           fetch('res/hurt.wav')
+           fetch('res/hurt.wav'),
+           fetch('res/select.wav')
          ]);
-         const [coinArrayBuffer, hurtArrayBuffer] = await Promise.all([
+         const [coinArrayBuffer, hurtArrayBuffer, selectArrayBuffer] = await Promise.all([
            coinResp.arrayBuffer(),
-           hurtResp.arrayBuffer()
+           hurtResp.arrayBuffer(),
+           selectResp.arrayBuffer()
          ]);
-         [coinBuffer, hurtBuffer] = await Promise.all([
+         [coinBuffer, hurtBuffer, selectBuffer] = await Promise.all([
            audioCtx.decodeAudioData(coinArrayBuffer),
-           audioCtx.decodeAudioData(hurtArrayBuffer)
+           audioCtx.decodeAudioData(hurtArrayBuffer),
+           audioCtx.decodeAudioData(selectArrayBuffer)
          ]);
        } catch (e) {
          console.log('Failed to load audio:', e);
@@ -330,7 +422,9 @@
 
          // Update chip count and remove chip
          if (isOnChange) {
-           chipCount += chipValue * 5;
+           const chipsWon = chipValue * 5;
+           chipCount += chipsWon;
+           totalChipsWon += chipsWon - chipValue;
          }
          chip.remove();
 
@@ -413,28 +507,9 @@
 
          // Check if clicked on an existing placed chip (not moved)
          if (!hasMoved && !fromPile) {
-           // Find if there's another chip at this location
-           const placedChips = document.querySelectorAll('.placed-chip');
-           let targetChip = null;
-
-           for (const otherChip of placedChips) {
-             if (otherChip === draggedChip) continue;
-             const rect = otherChip.getBoundingClientRect();
-             if (e.clientX >= rect.left && e.clientX <= rect.right &&
-                 e.clientY >= rect.top && e.clientY <= rect.bottom) {
-               targetChip = otherChip;
-               break;
-             }
-           }
-
-           if (targetChip) {
-             // Merge chips: increment target value
-             const currentValue = parseInt(targetChip.textContent);
-             targetChip.textContent = currentValue + 1;
-             draggedChip.remove();
-             draggedChip = null;
-             return;
-           }
+           draggedChip.textContent = parseInt(draggedChip.textContent) + 1;
+           draggedChip = null;
+           return;
          }
 
          // Check if pointer is inside header
@@ -466,9 +541,9 @@
            }
 
            if (targetChip) {
-             // Merge chips: increment target value
-             const currentValue = parseInt(targetChip.textContent);
-             targetChip.textContent = currentValue + 1;
+             // Merge chips
+             targetChip.textContent = parseInt(targetChip.textContent) +
+                                      parseInt(draggedChip.textContent);
              draggedChip.remove();
            } else {
              // Dropped outside header - make it stay
@@ -527,9 +602,9 @@
        }
 
        headerInfo.innerHTML = `
-          <div>Article: ${pageTitle}</div>
-          <div>Total number of edits: ${allRevisions.length}</div>
-          <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+         <div>Article: ${pageTitle}</div>
+         <div>Total number of edits: ${allRevisions.length}</div>
+         <div>Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
        `;
        content.innerHTML = contentHtml;
 
@@ -703,6 +778,9 @@
        pageTitle = selectedArticle;
        chipCount = parseInt(document.getElementById('chipCountInput').value);
        countdownTime = parseInt(document.getElementById('countdownInput').value);
+       startingChips = chipCount;
+       totalChipsInserted = startingChips;
+       totalChipsWon = 0;
        document.getElementById('chipCount').textContent = chipCount;
 
        document.getElementById('startScreen').classList.add('hidden');
@@ -753,6 +831,7 @@
      document.getElementById('continueBtn').addEventListener('click', () => {
        const insertChips = parseInt(document.getElementById('insertChipsInput').value);
        chipCount += insertChips;
+       totalChipsInserted += insertChips;
        document.getElementById('chipCount').textContent = chipCount;
        document.getElementById('gameOverScreen').classList.add('hidden');
 
@@ -817,6 +896,84 @@
        // Load a random article on boot if no URL params
        loadRandomArticle();
      }
+
+     // Pause/Resume button
+     document.getElementById('pauseBtn').addEventListener('click', () => {
+       if (isPaused) {
+         // Resume
+         isPaused = false;
+         document.getElementById('pauseBtn').textContent = 'Pause';
+
+         // Restart countdown from paused value
+         if (currentRevisionIndex < allRevisions.length - 1 && chipCount > 0) {
+           clearInterval(countdownInterval);
+           let count = pausedCountdown;
+           document.getElementById('countdown').textContent = count;
+
+           countdownInterval = setInterval(() => {
+             count--;
+             if (count > 0) {
+               document.getElementById('countdown').textContent = count;
+             } else {
+               clearInterval(countdownInterval);
+               nextRevision();
+             }
+           }, 1000);
+         }
+       } else {
+         // Pause
+         isPaused = true;
+         document.getElementById('pauseBtn').textContent = 'Resume';
+         pausedCountdown = parseInt(document.getElementById('countdown').textContent) || 0;
+         clearInterval(countdownInterval);
+       }
+     });
+
+     // End Game button
+     document.getElementById('endGameBtn').addEventListener('click', () => {
+       clearInterval(countdownInterval);
+
+       // Get current revision info
+       const currentRev = allRevisions[currentRevisionIndex];
+       const revisionDate = currentRev ? new Date(currentRev.timestamp).toLocaleString() : 'N/A';
+
+       // Calculate stats
+       const netGain = chipCount - totalChipsInserted;
+
+       // Populate end game screen
+       document.getElementById('endArticle').textContent = pageTitle;
+       document.getElementById('endRevision').textContent = `${currentRevisionIndex + 1} of ${allRevisions.length}`;
+       document.getElementById('endRevisionDate').textContent = revisionDate;
+       document.getElementById('endChipsInserted').textContent = totalChipsInserted;
+       document.getElementById('endChipsWon').textContent = totalChipsWon;
+       document.getElementById('endCurrentChips').textContent = chipCount;
+       document.getElementById('endNetGain').textContent = netGain >= 0 ? `+${netGain}` : netGain;
+       document.getElementById('endNetGain').style.color = netGain >= 0 ? 'green' : 'red';
+
+       // Show end game screen
+       document.getElementById('endGameScreen').classList.remove('hidden');
+     });
+
+     // Return to Start button
+     document.getElementById('returnToStartBtn').addEventListener('click', () => {
+       document.getElementById('endGameScreen').classList.add('hidden');
+       document.getElementById('container').classList.add('hidden');
+       document.getElementById('startScreen').classList.remove('hidden');
+       document.getElementById('gameOverScreen').classList.add('hidden');
+
+       // Reset game state
+       allRevisions = [];
+       revisionHtml = [];
+       currentRevisionIndex = 0;
+       isPaused = false;
+       pausedCountdown = 0;
+       totalChipsInserted = 0;
+       totalChipsWon = 0;
+       document.getElementById('pauseBtn').textContent = 'Pause';
+
+       // Clear placed chips
+       document.querySelectorAll('.placed-chip').forEach(chip => chip.remove());
+     });
     </script>
   </body>
 </html>
