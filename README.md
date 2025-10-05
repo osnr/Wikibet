@@ -1,0 +1,5 @@
+# WikiEditBet
+
+## License
+
+MIT
