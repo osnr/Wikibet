@@ -72,6 +72,12 @@
          cursor: grab;
          z-index: 999;
      }
+     .ghost-chip {
+         position: absolute;
+         pointer-events: none;
+         opacity: 0.4;
+         z-index: 998;
+     }
      #chipPile {
          position: relative;
      }
@@ -460,6 +466,43 @@
          document.getElementById('gameOverScreen').classList.remove('hidden');
        }
      }
+
+     // Create ghost chip
+     let ghostChip = null;
+     function createGhostChip() {
+       if (!ghostChip) {
+         ghostChip = document.createElement('div');
+         ghostChip.className = 'chip ghost-chip red';
+         ghostChip.style.display = 'none';
+         document.body.appendChild(ghostChip);
+       }
+       return ghostChip;
+     }
+     createGhostChip();
+
+     // Show/hide ghost chip on content hover
+     content.addEventListener('pointermove', (e) => {
+       if (chipCount <= 0 || draggedChip != null) {
+         ghostChip.style.display = 'none';
+         return;
+       }
+
+       // Check if hovering over an existing chip
+       if (e.target.classList.contains('placed-chip') || e.target.closest('.placed-chip')) {
+         ghostChip.style.display = 'none';
+         return;
+       }
+
+       const chipValue = e.shiftKey ? Math.min(5, chipCount) : 1;
+       ghostChip.textContent = chipValue;
+       ghostChip.style.display = 'flex';
+       ghostChip.style.left = (e.pageX - 20) + 'px';
+       ghostChip.style.top = (e.pageY - 20) + 'px';
+     });
+
+     content.addEventListener('pointerleave', () => {
+       ghostChip.style.display = 'none';
+     });
 
      // Click on content to place chip
      content.addEventListener('pointerdown', (e) => {
