@@ -13,16 +13,18 @@
          display: flex;
          justify-content: space-between;
          align-items: start;
+         font-family: system-ui;
      }
      #countdown {
          font-size: 48px;
          font-weight: bold;
-         color: #666;
+         color: #a95226;
      }
      #gameControls {
-         display: flex;
-         align-items: center;
+         position: absolute;
          gap: 10px;
+         right: 4em;
+         top: 1.25em;
      }
      #gameControls button {
          padding: 8px 16px;
@@ -51,6 +53,7 @@
          display: flex;
          align-items: center;
          justify-content: center;
+         font-family: serif;
          font-weight: bold;
          color: white;
          cursor: grab;
@@ -295,8 +298,8 @@
           <button id="clearBetsBtn">Clear all bets</button>
           <button id="endGameBtn">End game</button>
           <button id="pauseBtn">Pause</button>
-          <div id="countdown">3</div>
         </div>
+        <div id="countdown">3</div>
       </div>
 
       <div id="content"></div>
@@ -458,14 +461,22 @@
        if (chipCount <= 0) return;
        if (draggedChip != null) return;
 
+       // Check if we clicked on an existing placed chip
+       if (e.target.classList.contains('placed-chip')) {
+         return; // Let the chip's own handler deal with it
+       }
+
+       // Determine chip value based on Shift key
+       const chipsToPlace = e.shiftKey ? Math.min(5, chipCount) : 1;
+
        // Decrement chip count
-       chipCount--;
+       chipCount -= chipsToPlace;
        document.getElementById('chipCount').textContent = chipCount;
 
        // Create chip at click location
        const chip = document.createElement('div');
        chip.className = 'chip placed-chip red';
-       chip.textContent = '1';
+       chip.textContent = chipsToPlace;
        chip.style.left = (e.pageX - 20) + 'px';
        chip.style.top = (e.pageY - 20) + 'px';
        chip.style.pointerEvents = 'auto';
@@ -497,6 +508,7 @@
        let hasMoved = false;
        const startX = e.pageX;
        const startY = e.pageY;
+       const isShiftKey = e.shiftKey;
 
        const onPointerMove = (e) => {
          if (draggedChip) {
@@ -517,7 +529,10 @@
 
          // Check if clicked on an existing placed chip (not moved)
          if (!hasMoved && !fromPile) {
-           draggedChip.textContent = parseInt(draggedChip.textContent) + 1;
+           const incrementAmount = isShiftKey ? Math.min(5, chipCount) : 1;
+           draggedChip.textContent = parseInt(draggedChip.textContent) + incrementAmount;
+           chipCount -= incrementAmount;
+           document.getElementById('chipCount').textContent = chipCount;
            draggedChip = null;
            return;
          }
@@ -580,14 +595,17 @@
 
        if (draggedChip != null) return;
 
+       // Determine chip value based on Shift key
+       const chipsToPlace = e.shiftKey ? Math.min(5, chipCount) : 1;
+
        // Decrement chip count
-       chipCount--;
+       chipCount -= chipsToPlace;
        document.getElementById('chipCount').textContent = chipCount;
 
        // Create dragging chip
        const chip = document.createElement('div');
        chip.className = 'chip placed-chip red';
-       chip.textContent = '1';
+       chip.textContent = chipsToPlace;
        chip.style.left = (e.pageX - 20) + 'px';
        chip.style.top = (e.pageY - 20) + 'px';
        document.body.appendChild(chip);
