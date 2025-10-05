@@ -43,17 +43,15 @@
       .chip.red { background-color: #dc3545; }
       .placed-chip {
         position: absolute;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 3px solid white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         pointer-events: none;
+        cursor: default;
+        z-index: 1001;
+      }
+      #chipPile {
+        position: relative;
+      }
+      #chipCount {
+        font-size: 20px;
       }
       #content {
         margin-top: 120px;
@@ -68,11 +66,9 @@
         <div id="headerInfo">
         </div>
         <div id="chipTray">
-          <div class="chip red">1</div>
-          <div class="chip red">1</div>
-          <div class="chip red">1</div>
-          <div class="chip red">1</div>
-          <div class="chip red">1</div>
+          <div id="chipPile" class="chip red">
+            <span id="chipCount">5</span>
+          </div>
         </div>
         <div id="countdown">3</div>
       </div>
@@ -94,6 +90,7 @@
      let pageTitle = '';
      let countdownInterval = null;
      let draggedChip = null;
+     let chipCount = 5;
 
      function displayRevision() {
        let contentHtml;
@@ -119,18 +116,26 @@
          nextRevision();
        });
 
-       // Add pointer event drag functionality to chips
-       document.querySelectorAll('.chip').forEach(chip => {
-         chip.addEventListener('pointerdown', (e) => {
+       // Add pointer event drag functionality to chip pile
+       const chipPile = document.getElementById('chipPile');
+       if (chipPile) {
+         chipPile.addEventListener('pointerdown', (e) => {
+           if (chipCount <= 0) return;
+
            e.preventDefault();
 
-           // Remove chip from tray
-           const chipTray = document.getElementById('chipTray');
-           chip.remove();
+           // Decrement chip count
+           chipCount--;
+           document.getElementById('chipCount').textContent = chipCount;
+
+           // Hide pile if no chips left
+           if (chipCount === 0) {
+             chipPile.style.visibility = 'hidden';
+           }
 
            // Create dragging chip
            draggedChip = document.createElement('div');
-           draggedChip.className = 'placed-chip red';
+           draggedChip.className = 'chip placed-chip red';
            draggedChip.textContent = '1';
            draggedChip.style.left = (e.pageX - 20) + 'px';
            draggedChip.style.top = (e.pageY - 20) + 'px';
@@ -155,7 +160,7 @@
            document.body.addEventListener('pointermove', onPointerMove);
            document.body.addEventListener('pointerup', onPointerUp);
          });
-       });
+       }
 
        // Start countdown
        if (currentRevisionIndex < allRevisions.length - 1) {
