@@ -10,6 +10,14 @@
         border-bottom: 1px solid #ccc;
         padding: 10px;
         z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+      }
+      #countdown {
+        font-size: 48px;
+        font-weight: bold;
+        color: #666;
       }
       #content {
         margin-top: 120px;
@@ -34,6 +42,7 @@
      let revisionHtml = [];
      let currentRevisionIndex = 0;
      let pageTitle = '';
+     let countdownInterval = null;
 
      function displayRevision() {
        let content;
@@ -48,15 +57,40 @@
 
        container.innerHTML = `
          <div id="header">
-           <div class="header">Article: ${pageTitle}</div>
-           <div class="header">Total number of edits: ${allRevisions.length}</div>
-           <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
-           <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
+           <div>
+             <div class="header">Article: ${pageTitle}</div>
+             <div class="header">Total number of edits: ${allRevisions.length}</div>
+             <div class="header">Showing revision ${currentRevisionIndex + 1} of ${allRevisions.length}</div>
+             <button id="nextBtn" ${currentRevisionIndex >= allRevisions.length - 1 ? 'disabled' : ''}>Next Revision</button>
+           </div>
+           <div id="countdown">3</div>
          </div>
          <div id="content">${content}</div>
        `;
 
-       document.getElementById('nextBtn').addEventListener('click', nextRevision);
+       document.getElementById('nextBtn').addEventListener('click', () => {
+         clearInterval(countdownInterval);
+         nextRevision();
+       });
+
+       // Start countdown
+       if (currentRevisionIndex < allRevisions.length - 1) {
+         clearInterval(countdownInterval);
+         let count = 3;
+         document.getElementById('countdown').textContent = count;
+
+         countdownInterval = setInterval(() => {
+           count--;
+           if (count > 0) {
+             document.getElementById('countdown').textContent = count;
+           } else {
+             clearInterval(countdownInterval);
+             nextRevision();
+           }
+         }, 1000);
+       } else {
+         document.getElementById('countdown').textContent = '';
+       }
 
        // Scroll to first change if not the first revision
        if (currentRevisionIndex > 0) {
