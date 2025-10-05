@@ -117,50 +117,72 @@
        });
 
        // Add pointer event drag functionality to chip pile
-       const chipPile = document.getElementById('chipPile');
-       if (chipPile) {
-         chipPile.addEventListener('pointerdown', (e) => {
-           if (chipCount <= 0) return;
+       chipPile.addEventListener('pointerdown', (e) => {
+         if (chipCount <= 0) return;
 
-           e.preventDefault();
+         console.log("DOWN");
 
-           // Decrement chip count
-           chipCount--;
-           document.getElementById('chipCount').textContent = chipCount;
+         e.preventDefault();
 
-           // Hide pile if no chips left
-           if (chipCount === 0) {
-             chipPile.style.visibility = 'hidden';
+         if (draggedChip != null) {
+           return;
+         }
+
+         // Decrement chip count
+         chipCount--;
+         document.getElementById('chipCount').textContent = chipCount;
+
+         // Create dragging chip
+         draggedChip = document.createElement('div');
+         draggedChip.className = 'chip placed-chip red';
+         draggedChip.textContent = '1';
+         draggedChip.style.left = (e.pageX - 20) + 'px';
+         draggedChip.style.top = (e.pageY - 20) + 'px';
+         document.body.appendChild(draggedChip);
+
+         // Capture pointer
+         document.body.setPointerCapture(e.pointerId);
+
+         const onPointerMove = (e) => {
+           if (draggedChip) {
+             draggedChip.style.left = (e.pageX - 20) + 'px';
+             draggedChip.style.top = (e.pageY - 20) + 'px';
+           }
+         };
+
+         const onPointerUp = (e) => {
+           document.body.removeEventListener('pointermove', onPointerMove);
+           document.body.removeEventListener('pointerup', onPointerUp);
+
+           // Check if pointer is inside header
+           const header = document.getElementById('header');
+           const headerRect = header.getBoundingClientRect();
+           if ((e.clientX >= headerRect.left && e.clientX <= headerRect.right &&
+                e.clientY >= headerRect.top && e.clientY <= headerRect.bottom) ||
+               e.clientX < 0 || e.clientY < 0) {
+             // Put chip back in pile
+             chipCount++;
+             document.getElementById('chipCount').textContent = chipCount;
+             chipPile.style.visibility = 'visible';
+
+             // Remove the dragged chip
+             if (draggedChip) {
+               draggedChip.remove();
+             }
+
+           } else {
+             // Dropped outside header - make it stay and enable pointer events
+             if (draggedChip) {
+               draggedChip.style.pointerEvents = 'auto';
+             }
            }
 
-           // Create dragging chip
-           draggedChip = document.createElement('div');
-           draggedChip.className = 'chip placed-chip red';
-           draggedChip.textContent = '1';
-           draggedChip.style.left = (e.pageX - 20) + 'px';
-           draggedChip.style.top = (e.pageY - 20) + 'px';
-           document.body.appendChild(draggedChip);
+           draggedChip = null;
+         };
 
-           // Capture pointer
-           document.body.setPointerCapture(e.pointerId);
-
-           const onPointerMove = (e) => {
-             if (draggedChip) {
-               draggedChip.style.left = (e.pageX - 20) + 'px';
-               draggedChip.style.top = (e.pageY - 20) + 'px';
-             }
-           };
-
-           const onPointerUp = (e) => {
-             document.body.removeEventListener('pointermove', onPointerMove);
-             document.body.removeEventListener('pointerup', onPointerUp);
-             draggedChip = null;
-           };
-
-           document.body.addEventListener('pointermove', onPointerMove);
-           document.body.addEventListener('pointerup', onPointerUp);
-         });
-       }
+         document.body.addEventListener('pointermove', onPointerMove);
+         document.body.addEventListener('pointerup', onPointerUp);
+       });
 
        // Start countdown
        if (currentRevisionIndex < allRevisions.length - 1) {
