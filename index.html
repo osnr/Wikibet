@@ -1,6 +1,10 @@
 <html>
   <head>
     <style>
+     body, html {
+         margin: 0;
+         padding: 0;
+     }
      #header {
          position: fixed;
          top: 0;
@@ -89,9 +93,10 @@
          min-height: 100vh;
          gap: 20px;
          padding: 20px;
+         box-sizing: border-box;
      }
      #startScreen h1 {
-         margin-bottom: 20px;
+         margin: 0 0 20px 0;
      }
      #startScreen input, #startScreen button {
          padding: 10px 15px;
@@ -972,8 +977,8 @@
 
      // Shared function to show end game screen
      function showEndGameScreen() {
-       clearAllBets();
        clearInterval(countdownInterval);
+       clearAllBets();
 
        // Get current revision info
        const currentRev = allRevisions[currentRevisionIndex];
