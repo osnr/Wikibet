@@ -147,6 +147,22 @@
          font-size: 14px;
          background-color: #f5f5f5;
      }
+     .shareUrlContainer {
+         display: flex;
+         gap: 10px;
+         align-items: center;
+     }
+     #copyShareUrlBtn {
+         padding: 8px 16px;
+         font-size: 14px;
+         border-radius: 5px;
+         border: 1px solid #ccc;
+         background-color: white;
+         cursor: pointer;
+     }
+     #copyShareUrlBtn:hover {
+         background-color: #f0f0f0;
+     }
      .hidden {
          display: none !important;
      }
@@ -282,7 +298,7 @@
 
       <div class="inputGroup">
         <label for="chipCountInput">Starting chips:</label>
-        <input type="number" id="chipCountInput" value="5" min="1" max="20">
+        <input type="number" id="chipCountInput" value="15" min="1" max="20">
       </div>
 
       <div class="inputGroup">
@@ -292,7 +308,10 @@
 
       <div class="inputGroup">
         <label for="shareUrl">Share this URL to play this exact game:</label>
-        <input type="text" id="shareUrl" readonly>
+        <div class="shareUrlContainer">
+          <input type="text" id="shareUrl" readonly>
+          <button id="copyShareUrlBtn">Copy</button>
+        </div>
       </div>
 
       <button id="startGameBtn" disabled>Start game</button>
@@ -304,7 +323,7 @@
         </div>
         <div id="chipTray">
           <div id="chipPile" class="chip red">
-            <span id="chipCount">5</span>
+            <span id="chipCount">15</span>
           </div>
         </div>
         <div id="gameControls">
@@ -312,7 +331,7 @@
           <button id="endGameBtn">End game</button>
           <button id="pauseBtn">Pause</button>
         </div>
-        <div id="countdown">3</div>
+        <div id="countdown">4</div>
       </div>
 
       <div id="content"></div>
@@ -332,9 +351,9 @@
      let pageTitle = '';
      let countdownInterval = null;
      let draggedChip = null;
-     let chipCount = 5;
+     let chipCount = 15;
      let selectedArticle = null;
-     let countdownTime = 3;
+     let countdownTime = 4;
      let isPaused = false;
      let pausedCountdown = 0;
      let totalChipsInserted = 0;
@@ -998,6 +1017,24 @@
      document.getElementById('randomArticleBtn').addEventListener('click', loadRandomArticle);
      document.getElementById('startGameBtn').addEventListener('click', startGame);
 
+     // Copy share URL button
+     document.getElementById('copyShareUrlBtn').addEventListener('click', async () => {
+       const shareUrl = document.getElementById('shareUrl').value;
+       if (shareUrl) {
+         try {
+           await navigator.clipboard.writeText(shareUrl);
+           const btn = document.getElementById('copyShareUrlBtn');
+           const originalText = btn.textContent;
+           btn.textContent = 'Copied!';
+           setTimeout(() => {
+             btn.textContent = originalText;
+           }, 2000);
+         } catch (err) {
+           console.error('Failed to copy:', err);
+         }
+       }
+     });
+
      // Check for URL parameters on load
      const urlParams = new URLSearchParams(window.location.search);
      const articleParam = urlParams.get('article');
@@ -1113,8 +1150,9 @@
        totalChipsWon = 0;
        document.getElementById('pauseBtn').textContent = 'Pause';
 
-       // Clear placed chips
+       // Clear placed chips and content
        document.querySelectorAll('.placed-chip').forEach(chip => chip.remove());
+       content.innerHTML = '';
      });
     </script>
   </body>
