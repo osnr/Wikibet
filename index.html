@@ -47,14 +47,14 @@
       .placed-chip {
         position: absolute;
         pointer-events: none;
-        cursor: default;
+        cursor: grab;
         z-index: 999;
       }
       #chipPile {
         position: relative;
       }
       #chipCount {
-        font-size: 20px;
+        font-size: 24px;
       }
       #content {
         margin-top: 120px;
@@ -119,33 +119,20 @@
          nextRevision();
        });
 
-       // Add pointer event drag functionality to chip pile
-       chipPile.addEventListener('pointerdown', (e) => {
-         if (chipCount <= 0) return;
-
-         console.log("DOWN");
-
+       // Shared drag logic
+       function startDragging(chip, fromPile, e) {
          e.preventDefault();
+         e.stopPropagation();
 
-         if (draggedChip != null) {
-           return;
-         }
+         if (draggedChip != null) return;
 
-         // Decrement chip count
-         chipCount--;
-         document.getElementById('chipCount').textContent = chipCount;
-
-         // Create dragging chip
-         draggedChip = document.createElement('div');
-         draggedChip.className = 'chip placed-chip red';
-         draggedChip.textContent = '1';
-         draggedChip.style.left = (e.pageX - 20) + 'px';
-         draggedChip.style.top = (e.pageY - 20) + 'px';
+         draggedChip = chip;
          draggedChip.style.zIndex = '1001'; // Above header while dragging
-         document.body.appendChild(draggedChip);
+         draggedChip.style.pointerEvents = 'none';
+         document.body.style.cursor = 'grabbing';
 
-         // Capture pointer
-         document.body.setPointerCapture(e.pointerId);
+         // Capture pointer to ensure we get all move events
+         e.target.setPointerCapture(e.pointerId);
 
          const onPointerMove = (e) => {
            if (draggedChip) {
@@ -157,6 +144,7 @@
          const onPointerUp = (e) => {
            document.body.removeEventListener('pointermove', onPointerMove);
            document.body.removeEventListener('pointerup', onPointerUp);
+           document.body.style.cursor = '';
 
            // Check if pointer is inside header
            const header = document.getElementById('header');
@@ -168,17 +156,15 @@
              chipCount++;
              document.getElementById('chipCount').textContent = chipCount;
              chipPile.style.visibility = 'visible';
-
-             // Remove the dragged chip
              if (draggedChip) {
                draggedChip.remove();
              }
-
            } else {
-             // Dropped outside header - make it stay and enable pointer events
+             // Dropped outside header - make it stay
              if (draggedChip) {
                draggedChip.style.pointerEvents = 'auto';
                draggedChip.style.zIndex = '999'; // Below header when placed
+               draggedChip.style.cursor = 'grab';
              }
            }
 
@@ -187,6 +173,36 @@
 
          document.body.addEventListener('pointermove', onPointerMove);
          document.body.addEventListener('pointerup', onPointerUp);
+       }
+
+       // Add pointer event drag functionality to chip pile
+       chipPile.addEventListener('pointerdown', (e) => {
+         if (chipCount <= 0) return;
+
+         console.log("DOWN");
+
+         e.preventDefault();
+
+         if (draggedChip != null) return;
+
+         // Decrement chip count
+         chipCount--;
+         document.getElementById('chipCount').textContent = chipCount;
+
+         // Create dragging chip
+         const chip = document.createElement('div');
+         chip.className = 'chip placed-chip red';
+         chip.textContent = '1';
+         chip.style.left = (e.pageX - 20) + 'px';
+         chip.style.top = (e.pageY - 20) + 'px';
+         document.body.appendChild(chip);
+
+         // Add click handler for re-dragging
+         chip.addEventListener('pointerdown', (e) => {
+           startDragging(chip, false, e);
+         });
+
+         startDragging(chip, true, e);
        });
 
        // Start countdown
