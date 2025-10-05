@@ -61,10 +61,95 @@
       }
       ins { background-color: #90EE90; text-decoration: none; }
       del { background-color: #FFB6C1; }
+
+      #startScreen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        gap: 20px;
+        padding: 20px;
+      }
+      #startScreen h1 {
+        margin-bottom: 20px;
+      }
+      #startScreen input, #startScreen button {
+        padding: 10px 15px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+      #startScreen input {
+        width: 300px;
+      }
+      #startScreen button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      #startScreen button:hover {
+        background-color: #0056b3;
+      }
+      #startScreen button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .inputGroup {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 300px;
+      }
+      .inputGroup label {
+        font-weight: bold;
+      }
+      #articleInfo {
+        color: #666;
+        font-style: italic;
+      }
+      #shareUrl {
+        width: 400px;
+        font-size: 14px;
+        background-color: #f5f5f5;
+      }
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
-    <div id="container">
+    <div id="startScreen">
+      <h1>Wikipedia Edit Roulette</h1>
+
+      <div class="inputGroup">
+        <label for="articleInput">Article name:</label>
+        <input type="text" id="articleInput" placeholder="Enter article name (e.g., Apple Inc.)">
+        <button id="randomArticleBtn">Random article</button>
+      </div>
+
+      <div id="articleInfo"></div>
+
+      <div class="inputGroup">
+        <label for="chipCountInput">Starting chips:</label>
+        <input type="number" id="chipCountInput" value="5" min="1" max="20">
+      </div>
+
+      <div class="inputGroup">
+        <label for="countdownInput">Round time (seconds):</label>
+        <input type="number" id="countdownInput" value="3" min="1" max="30">
+      </div>
+
+      <div class="inputGroup">
+        <label for="shareUrl">Shareable URL:</label>
+        <input type="text" id="shareUrl" readonly>
+      </div>
+
+      <button id="startGameBtn" disabled>Start game</button>
+    </div>
+
+    <div id="container" class="hidden">
       <div id="header">
         <div id="headerInfo">
         </div>
@@ -94,6 +179,69 @@
      let countdownInterval = null;
      let draggedChip = null;
      let chipCount = 5;
+     let selectedArticle = null;
+     let countdownTime = 3;
+
+     function scoreRound() {
+       // Check placed chips after content is rendered
+       if (currentRevisionIndex == 0) {
+         return;
+       }
+
+       const placedChips = document.querySelectorAll('.placed-chip');
+       placedChips.forEach(chip => {
+         const chipRect = chip.getBoundingClientRect();
+
+         // Check if chip intersects with any ins or del element
+         let isOnChange = false;
+         const changes = document.querySelectorAll('ins, del');
+         for (const change of changes) {
+           const changeRect = change.getBoundingClientRect();
+
+           // Check if rectangles intersect
+           if (!(chipRect.right < changeRect.left ||
+                 chipRect.left > changeRect.right ||
+                 chipRect.bottom < changeRect.top ||
+                 chipRect.top > changeRect.bottom)) {
+             isOnChange = true;
+             break;
+           }
+         }
+
+         // Create overlay animation
+         const overlay = document.createElement('div');
+         overlay.textContent = isOnChange ? '+1' : '-1';
+         overlay.style.position = 'absolute';
+         overlay.style.left = chip.style.left;
+         overlay.style.top = chip.style.top;
+         overlay.style.fontSize = '24px';
+         overlay.style.fontWeight = 'bold';
+         overlay.style.color = isOnChange ? 'green' : 'red';
+         overlay.style.zIndex = '1002';
+         overlay.style.pointerEvents = 'none';
+         overlay.style.transition = 'opacity 2s, transform 2s';
+         overlay.style.transform = 'translateY(0)';
+         document.body.appendChild(overlay);
+
+         // Animate and remove
+         setTimeout(() => {
+           overlay.style.opacity = '0';
+           overlay.style.transform = 'translateY(-20px)';
+         }, 0);
+
+         setTimeout(() => {
+           overlay.remove();
+         }, 2000);
+
+         // Update chip count and remove chip
+         if (isOnChange) {
+           chipCount += 2;
+         }
+         chip.remove();
+       });
+
+       document.getElementById('chipCount').textContent = chipCount;
+     }
 
      function displayRevision() {
        let contentHtml;
@@ -114,63 +262,7 @@
        `;
        content.innerHTML = contentHtml;
 
-       // Check placed chips after content is rendered
-       if (currentRevisionIndex > 0) {
-         const placedChips = document.querySelectorAll('.placed-chip');
-         placedChips.forEach(chip => {
-           const chipRect = chip.getBoundingClientRect();
-
-           // Check if chip intersects with any ins or del element
-           let isOnChange = false;
-           const changes = document.querySelectorAll('ins, del');
-           for (const change of changes) {
-             const changeRect = change.getBoundingClientRect();
-
-             // Check if rectangles intersect
-             if (!(chipRect.right < changeRect.left ||
-                   chipRect.left > changeRect.right ||
-                   chipRect.bottom < changeRect.top ||
-                   chipRect.top > changeRect.bottom)) {
-               isOnChange = true;
-               break;
-             }
-           }
-
-           // Create overlay animation
-           const overlay = document.createElement('div');
-           overlay.textContent = isOnChange ? '+1' : '-1';
-           overlay.style.position = 'absolute';
-           overlay.style.left = chip.style.left;
-           overlay.style.top = chip.style.top;
-           overlay.style.fontSize = '24px';
-           overlay.style.fontWeight = 'bold';
-           overlay.style.color = isOnChange ? 'green' : 'red';
-           overlay.style.zIndex = '1002';
-           overlay.style.pointerEvents = 'none';
-           overlay.style.transition = 'opacity 2s, transform 2s';
-           overlay.style.transform = 'translateY(0)';
-           document.body.appendChild(overlay);
-
-           // Animate and remove
-           setTimeout(() => {
-             overlay.style.opacity = '0';
-             overlay.style.transform = 'translateY(-20px)';
-           }, 0);
-
-           setTimeout(() => {
-             overlay.remove();
-           }, 2000);
-
-           // Update chip count and remove chip
-           if (isOnChange) {
-             chipCount += 2;
-           }
-           chip.remove();
-         });
-
-         document.getElementById('chipCount').textContent = chipCount;
-         chipPile.style.visibility = chipCount > 0 ? 'visible' : 'hidden';
-       }
+       scoreRound();
 
        document.getElementById('nextBtn').addEventListener('click', () => {
          clearInterval(countdownInterval);
@@ -266,7 +358,7 @@
        // Start countdown
        if (currentRevisionIndex < allRevisions.length - 1) {
          clearInterval(countdownInterval);
-         let count = 3;
+         let count = countdownTime;
          document.getElementById('countdown').textContent = count;
 
          countdownInterval = setInterval(() => {
@@ -362,7 +454,176 @@
        }
      }
 
-     fetchRandomArticleEdits();
+     // Start screen logic
+     async function checkArticleEdits(articleName) {
+       try {
+         document.getElementById('articleInfo').textContent = 'Checking article...';
+         document.getElementById('startGameBtn').disabled = true;
+
+         const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(articleName)}&prop=revisions&rvlimit=1&format=json&origin=*`;
+         const response = await fetch(historyUrl);
+         const data = await response.json();
+         const pages = data.query.pages;
+         const pageId = Object.keys(pages)[0];
+
+         if (pageId === '-1') {
+           document.getElementById('articleInfo').textContent = 'Article not found. Please try another.';
+           selectedArticle = null;
+           updateShareUrl();
+           return;
+         }
+
+         // Fetch revision count
+         const countUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(articleName)}&prop=revisions&rvlimit=500&format=json&origin=*`;
+         const countResponse = await fetch(countUrl);
+         const countData = await countResponse.json();
+         const page = countData.query.pages[Object.keys(countData.query.pages)[0]];
+
+         let revCount = 0;
+         if (page.revisions) {
+           revCount = page.revisions.length;
+           // Note: This is approximate since Wikipedia limits to 500 revisions per query
+           if (countData.continue) {
+             revCount = '500+';
+           }
+         }
+
+         selectedArticle = articleName;
+         document.getElementById('articleInfo').textContent = `Found: "${articleName}" with ${revCount} edits`;
+         document.getElementById('startGameBtn').disabled = false;
+         updateShareUrl();
+       } catch (error) {
+         document.getElementById('articleInfo').textContent = 'Error checking article: ' + error.message;
+         selectedArticle = null;
+         updateShareUrl();
+       }
+     }
+
+     function updateShareUrl() {
+       const chipCountInput = document.getElementById('chipCountInput').value;
+       const countdownInput = document.getElementById('countdownInput').value;
+       if (selectedArticle && chipCountInput && countdownInput) {
+         const params = new URLSearchParams({
+           article: selectedArticle,
+           chips: chipCountInput,
+           countdown: countdownInput
+         });
+         const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+         document.getElementById('shareUrl').value = url;
+       } else {
+         document.getElementById('shareUrl').value = '';
+       }
+     }
+
+     async function loadRandomArticle() {
+       try {
+         document.getElementById('randomArticleBtn').disabled = true;
+         document.getElementById('articleInfo').textContent = 'Loading random article...';
+
+         const randomUrl = 'https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*';
+         const response = await fetch(randomUrl);
+         const data = await response.json();
+         const articleName = data.query.random[0].title;
+
+         document.getElementById('articleInput').value = articleName;
+         await checkArticleEdits(articleName);
+       } catch (error) {
+         document.getElementById('articleInfo').textContent = 'Error loading random article: ' + error.message;
+       } finally {
+         document.getElementById('randomArticleBtn').disabled = false;
+       }
+     }
+
+     function startGame() {
+       pageTitle = selectedArticle;
+       chipCount = parseInt(document.getElementById('chipCountInput').value);
+       countdownTime = parseInt(document.getElementById('countdownInput').value);
+       document.getElementById('chipCount').textContent = chipCount;
+
+       document.getElementById('startScreen').classList.add('hidden');
+       document.getElementById('container').classList.remove('hidden');
+
+       fetchArticleEdits(pageTitle);
+     }
+
+     async function fetchArticleEdits(articleName) {
+       try {
+         headerInfo.innerHTML = `Loading edits for: ${articleName}...`;
+
+         // Fetch all revisions (up to 1000 with pagination)
+         allRevisions = [];
+         let continueToken = null;
+
+         while (allRevisions.length < 1000) {
+           const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(articleName)}&prop=revisions&rvlimit=500&rvdir=newer&format=json&origin=*${continueToken ? '&rvcontinue=' + continueToken : ''}`;
+           const historyResponse = await fetch(historyUrl);
+           const historyData = await historyResponse.json();
+           const page = historyData.query.pages[Object.keys(historyData.query.pages)[0]];
+
+           if (page.revisions) {
+             allRevisions = allRevisions.concat(page.revisions);
+           }
+
+           if (historyData.continue && historyData.continue.rvcontinue && allRevisions.length < 1000) {
+             continueToken = historyData.continue.rvcontinue;
+           } else {
+             break;
+           }
+         }
+
+         // Get the original article HTML (first revision)
+         const firstRevId = allRevisions[0].revid;
+         const contentUrl = `https://en.wikipedia.org/w/api.php?action=parse&oldid=${firstRevId}&format=json&origin=*`;
+         const contentResponse = await fetch(contentUrl);
+         const contentData = await contentResponse.json();
+         revisionHtml[0] = contentData.parse.text['*'];
+
+         displayRevision();
+       } catch (error) {
+         headerInfo.innerHTML = 'Error loading data: ' + error.message;
+       }
+     }
+
+     // Event listeners for start screen
+     document.getElementById('articleInput').addEventListener('input', (e) => {
+       const value = e.target.value.trim();
+       if (value) {
+         checkArticleEdits(value);
+       } else {
+         selectedArticle = null;
+         document.getElementById('articleInfo').textContent = '';
+         document.getElementById('startGameBtn').disabled = true;
+         updateShareUrl();
+       }
+     });
+
+     document.getElementById('chipCountInput').addEventListener('input', () => {
+       updateShareUrl();
+     });
+
+     document.getElementById('countdownInput').addEventListener('input', () => {
+       updateShareUrl();
+     });
+
+     document.getElementById('randomArticleBtn').addEventListener('click', loadRandomArticle);
+     document.getElementById('startGameBtn').addEventListener('click', startGame);
+
+     // Check for URL parameters on load
+     const urlParams = new URLSearchParams(window.location.search);
+     const articleParam = urlParams.get('article');
+     const chipsParam = urlParams.get('chips');
+     const countdownParam = urlParams.get('countdown');
+
+     if (articleParam) {
+       document.getElementById('articleInput').value = articleParam;
+       if (chipsParam) {
+         document.getElementById('chipCountInput').value = chipsParam;
+       }
+       if (countdownParam) {
+         document.getElementById('countdownInput').value = countdownParam;
+       }
+       checkArticleEdits(articleParam);
+     }
     </script>
   </body>
 </html>
