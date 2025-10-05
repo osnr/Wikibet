@@ -57,6 +57,21 @@
        `;
 
        document.getElementById('nextBtn').addEventListener('click', nextRevision);
+
+       // Scroll to first change if not the first revision
+       if (currentRevisionIndex > 0) {
+         setTimeout(() => {
+           const firstChange = document.querySelector('ins, del');
+           if (firstChange) {
+             const headerHeight = document.getElementById('header').offsetHeight;
+             const elementPosition = firstChange.getBoundingClientRect().top + window.scrollY;
+             window.scrollTo({
+               top: elementPosition - headerHeight - 20,
+               behavior: 'smooth'
+             });
+           }
+         }, 0);
+       }
      }
 
      async function nextRevision() {
