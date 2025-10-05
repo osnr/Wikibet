@@ -66,6 +66,9 @@
      .chip:active {
          cursor: grabbing;
      }
+     body.dragging, body.dragging * {
+         cursor: grabbing !important;
+     }
      .chip.red { background-color: #dc3545; }
      .placed-chip {
          position: absolute;
@@ -607,7 +610,7 @@
 
        draggedChip = chip;
        draggedChip.style.zIndex = '1001'; // Above header while dragging
-       document.body.style.cursor = 'grabbing';
+       document.body.classList.add('dragging');
 
        // Capture pointer to ensure we get all move events
        e.target.setPointerCapture(e.pointerId);
@@ -632,7 +635,7 @@
        const onPointerUp = (e) => {
          document.body.removeEventListener('pointermove', onPointerMove);
          document.body.removeEventListener('pointerup', onPointerUp);
-         document.body.style.cursor = '';
+         document.body.classList.remove('dragging');
 
          // Check if clicked on an existing placed chip (not moved)
          if (!hasMoved && !fromPile) {
