@@ -169,6 +169,12 @@
      #gameOverScreen button:hover {
          background-color: #218838;
      }
+     #gameOverScreen #endGameFromOverBtn {
+         background-color: #dc3545;
+     }
+     #gameOverScreen #endGameFromOverBtn:hover {
+         background-color: #c82333;
+     }
      #endGameScreen {
          position: fixed;
          top: 0;
@@ -216,12 +222,13 @@
   </head>
   <body>
     <div id="gameOverScreen" class="hidden">
-      <h2>Game over!</h2>
+      <h2>Out of chips!</h2>
       <div class="inputGroup">
         <label for="insertChipsInput">Insert chips to continue:</label>
         <input type="number" id="insertChipsInput" value="5" min="1" max="20">
       </div>
       <button id="continueBtn">Continue</button>
+      <button id="endGameFromOverBtn">End game</button>
     </div>
 
     <div id="endGameScreen" class="hidden">
@@ -242,10 +249,10 @@
     <div id="startScreen">
       <h1>WikiEditBet</h1>
 
-      <div>
-        Click on the article to place chips to bet on where you think edits
-        will happen in the next round.
-      </div>
+      <p>Click on the article to place chips to bet on where you think edits
+        will happen in the next round.</p>
+      <p>Every round, when an edit touches a chip, you'll 5x its value.
+        When no edits touch a chip, you'll lose it.</p>
 
       <div class="inputGroup">
         <label for="articleInput">Article name:</label>
@@ -283,6 +290,7 @@
           </div>
         </div>
         <div id="gameControls">
+          <button id="clearBetsBtn">Clear All Bets</button>
           <button id="endGameBtn">End Game</button>
           <button id="pauseBtn">Pause</button>
           <div id="countdown">3</div>
@@ -929,8 +937,19 @@
        }
      });
 
-     // End Game button
-     document.getElementById('endGameBtn').addEventListener('click', () => {
+     // Shared function to clear all placed chips
+     function clearAllBets() {
+       document.querySelectorAll('.placed-chip').forEach(chip => {
+         const chipValue = parseInt(chip.textContent);
+         chipCount += chipValue;
+         chip.remove();
+       });
+       document.getElementById('chipCount').textContent = chipCount;
+     }
+
+     // Shared function to show end game screen
+     function showEndGameScreen() {
+       clearAllBets();
        clearInterval(countdownInterval);
 
        // Get current revision info
@@ -950,9 +969,19 @@
        document.getElementById('endNetGain').textContent = netGain >= 0 ? `+${netGain}` : netGain;
        document.getElementById('endNetGain').style.color = netGain >= 0 ? 'green' : 'red';
 
-       // Show end game screen
+       // Hide other screens and show end game screen
+       document.getElementById('gameOverScreen').classList.add('hidden');
        document.getElementById('endGameScreen').classList.remove('hidden');
-     });
+     }
+
+     // Clear all bets button
+     document.getElementById('clearBetsBtn').addEventListener('click', clearAllBets);
+
+     // End Game button
+     document.getElementById('endGameBtn').addEventListener('click', showEndGameScreen);
+
+     // End game from game over screen
+     document.getElementById('endGameFromOverBtn').addEventListener('click', showEndGameScreen);
 
      // Return to Start button
      document.getElementById('returnToStartBtn').addEventListener('click', () => {
