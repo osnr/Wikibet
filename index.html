@@ -368,24 +368,28 @@
      let coinBuffer = null;
      let hurtBuffer = null;
      let selectBuffer = null;
+     let countdownBuffer = null;
 
      // Load audio buffers
      async function loadAudioBuffers() {
        try {
-         const [coinResp, hurtResp, selectResp] = await Promise.all([
+         const [coinResp, hurtResp, selectResp, countdownResp] = await Promise.all([
            fetch('res/coin.wav'),
            fetch('res/hurt.wav'),
-           fetch('res/select.wav')
+           fetch('res/select.wav'),
+           fetch('res/countdown.wav')
          ]);
-         const [coinArrayBuffer, hurtArrayBuffer, selectArrayBuffer] = await Promise.all([
+         const [coinArrayBuffer, hurtArrayBuffer, selectArrayBuffer, countdownArrayBuffer] = await Promise.all([
            coinResp.arrayBuffer(),
            hurtResp.arrayBuffer(),
-           selectResp.arrayBuffer()
+           selectResp.arrayBuffer(),
+           countdownResp.arrayBuffer()
          ]);
-         [coinBuffer, hurtBuffer, selectBuffer] = await Promise.all([
+         [coinBuffer, hurtBuffer, selectBuffer, countdownBuffer] = await Promise.all([
            audioCtx.decodeAudioData(coinArrayBuffer),
            audioCtx.decodeAudioData(hurtArrayBuffer),
-           audioCtx.decodeAudioData(selectArrayBuffer)
+           audioCtx.decodeAudioData(selectArrayBuffer),
+           audioCtx.decodeAudioData(countdownArrayBuffer)
          ]);
        } catch (e) {
          console.log('Failed to load audio:', e);
@@ -393,11 +397,14 @@
      }
 
      // Play sound using AudioBuffer
-     function playSound(buffer) {
+     function playSound(buffer, volume = 1.0) {
        if (!buffer) return;
        const source = audioCtx.createBufferSource();
+       const gainNode = audioCtx.createGain();
        source.buffer = buffer;
-       source.connect(audioCtx.destination);
+       gainNode.gain.value = volume;
+       source.connect(gainNode);
+       gainNode.connect(audioCtx.destination);
        source.start();
      }
 
@@ -763,6 +770,10 @@
            count--;
            if (count > 0) {
              document.getElementById('countdown').textContent = count;
+             // Play countdown sound when hitting 3
+             if (count === 3) {
+               playSound(countdownBuffer, 0.5);
+             }
            } else {
              clearInterval(countdownInterval);
              nextRevision();
@@ -988,6 +999,10 @@
            count--;
            if (count > 0) {
              document.getElementById('countdown').textContent = count;
+             // Play countdown sound when hitting 3
+             if (count === 3) {
+               playSound(countdownBuffer, 0.5);
+             }
            } else {
              clearInterval(countdownInterval);
              nextRevision();
@@ -1075,6 +1090,10 @@
              count--;
              if (count > 0) {
                document.getElementById('countdown').textContent = count;
+               // Play countdown sound when hitting 3
+               if (count === 3) {
+                 playSound(countdownBuffer);
+               }
              } else {
                clearInterval(countdownInterval);
                nextRevision();
