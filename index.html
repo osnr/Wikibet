@@ -5,6 +5,9 @@
          margin: 0;
          padding: 0;
      }
+     a, a:active, a:hover, a:focus {
+         color: inherit;
+     }
      #header {
          position: fixed;
          top: 0;
@@ -396,6 +399,9 @@
        }
      }
 
+     // Track currently playing sounds
+     let currentSounds = [];
+
      // Play sound using AudioBuffer
      function playSound(buffer, volume = 1.0) {
        if (!buffer) return;
@@ -406,6 +412,29 @@
        source.connect(gainNode);
        gainNode.connect(audioCtx.destination);
        source.start();
+
+       // Track this sound
+       currentSounds.push(source);
+
+       // Remove from tracking when finished
+       source.onended = () => {
+         const index = currentSounds.indexOf(source);
+         if (index > -1) {
+           currentSounds.splice(index, 1);
+         }
+       };
+     }
+
+     // Stop all currently playing sounds
+     function stopAllSounds() {
+       currentSounds.forEach(source => {
+         try {
+           source.stop();
+         } catch (e) {
+           // Already stopped
+         }
+       });
+       currentSounds = [];
      }
 
      // Load audio on startup
@@ -758,10 +787,28 @@
        `;
        content.innerHTML = contentHtml;
 
+       // Check if this revision has any changes (ins or del elements)
+       const hasChanges = currentRevisionIndex === 0 ||
+                          content.querySelector('ins, del') !== null;
+
+       // If no changes and not the last revision, skip to next immediately
+       if (!hasChanges && currentRevisionIndex < allRevisions.length - 1) {
+         nextRevision();
+         return;
+       }
+
        await scoreRound();
 
+       // Check if we're on the last revision - end the game
+       if (currentRevisionIndex >= allRevisions.length - 1) {
+         document.getElementById('countdown').textContent = '';
+         clearInterval(countdownInterval);
+         showEndGameScreen();
+         return;
+       }
+
        // Start countdown (only if not game over)
-       if (currentRevisionIndex < allRevisions.length - 1 && chipCount > 0) {
+       if (chipCount > 0) {
          clearInterval(countdownInterval);
          let count = countdownTime;
          document.getElementById('countdown').textContent = count;
@@ -1106,6 +1153,7 @@
          document.getElementById('pauseBtn').textContent = 'Resume';
          pausedCountdown = parseInt(document.getElementById('countdown').textContent) || 0;
          clearInterval(countdownInterval);
+         stopAllSounds();
        }
      });
 
@@ -1122,6 +1170,7 @@
      // Shared function to show end game screen
      function showEndGameScreen() {
        clearInterval(countdownInterval);
+       stopAllSounds();
        clearAllBets();
 
        // Get current revision info
