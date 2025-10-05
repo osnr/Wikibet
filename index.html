@@ -26,6 +26,15 @@
          font-size: 48px;
          font-weight: bold;
          color: #a95226;
+         position: relative;
+     }
+     .countdown-particle {
+         position: absolute;
+         width: 4px;
+         height: 4px;
+         border-radius: 50%;
+         background-color: #a95226;
+         pointer-events: none;
      }
      #gameControls {
          position: absolute;
@@ -287,11 +296,11 @@
     <div id="startScreen">
       <h1>WikiEditBet</h1>
 
-      <div>
+      <div id="gameDescription">
         <p>Click on the article to place chips to bet on where you think edits
           will happen in the next round.</p>
-        <p>Every round, when an edit touches a chip, you'll 5x its value.
-          When no edits touch a chip, you'll lose it.</p>
+        <p>Every round, if an edit touches one of your chips, you win <span id="multiplierText">3x</span> its value.
+          When no edits touch a chip, you lose it.</p>
       </div>
 
       <div class="inputGroup">
@@ -303,13 +312,18 @@
       <div id="articleInfo"></div>
 
       <div class="inputGroup">
-        <label for="chipCountInput">Starting chips:</label>
+        <label for="chipCountInput">Starting chips (higher is easier):</label>
         <input type="number" id="chipCountInput" value="15" min="1" max="20">
       </div>
 
       <div class="inputGroup">
-        <label for="countdownInput">Round time (seconds):</label>
+        <label for="countdownInput">Timer per round (seconds):</label>
         <input type="number" id="countdownInput" value="4" min="1" max="30">
+      </div>
+
+      <div class="inputGroup">
+        <label for="multiplierInput">Reward multiplier (higher is easier):</label>
+        <input type="number" id="multiplierInput" value="3" min="1" max="10">
       </div>
 
       <div class="inputGroup">
@@ -360,7 +374,9 @@
      let chipCount = 15;
      let selectedArticle = null;
      let countdownTime = 4;
+     let rewardMultiplier = 3;
      let isPaused = false;
+     let isGameEnded = false;
      let pausedCountdown = 0;
      let totalChipsInserted = 0;
      let totalChipsWon = 0;
@@ -437,6 +453,60 @@
        currentSounds = [];
      }
 
+     // Countdown particle effects
+     function createCountdownParticles(count) {
+       const countdownEl = document.getElementById('countdown');
+       if (!countdownEl || count > 3 || count < 0) return;
+
+       // Calculate intensity based on countdown (3=low, 2=medium, 1=high, 0=highest)
+       const particleCount = count === 3 ? 8 : count === 2 ? 16 : count === 1 ? 24 : 32;
+       const speed = count === 3 ? 30 : count === 2 ? 40 : count === 1 ? 50 : 60;
+
+       const rect = countdownEl.getBoundingClientRect();
+       const centerX = rect.width / 2;
+       const centerY = rect.height / 2;
+
+       for (let i = 0; i < particleCount; i++) {
+         const particle = document.createElement('div');
+         particle.className = 'countdown-particle';
+
+         const angle = (i / particleCount) * Math.PI * 2;
+         const startRadius = 30;
+
+         particle.style.left = centerX + 'px';
+         particle.style.top = centerY + 'px';
+         particle.style.opacity = '1';
+
+         countdownEl.appendChild(particle);
+
+         // Animate particle
+         const duration = 800;
+         const startTime = Date.now();
+
+         const animate = () => {
+           const elapsed = Date.now() - startTime;
+           const progress = elapsed / duration;
+
+           if (progress >= 1) {
+             particle.remove();
+             return;
+           }
+
+           const currentRadius = startRadius + (speed * progress);
+           const x = centerX + Math.cos(angle) * currentRadius;
+           const y = centerY + Math.sin(angle) * currentRadius;
+
+           particle.style.left = x + 'px';
+           particle.style.top = y + 'px';
+           particle.style.opacity = (1 - progress);
+
+           requestAnimationFrame(animate);
+         };
+
+         requestAnimationFrame(animate);
+       }
+     }
+
      // Load audio on startup
      loadAudioBuffers();
 
@@ -481,7 +551,7 @@
 
          // Create overlay animation
          const overlay = document.createElement('div');
-         overlay.textContent = isOnChange ? `+${chipValue * 5}` : `-${chipValue}`;
+         overlay.textContent = isOnChange ? `+${chipValue * rewardMultiplier}` : `-${chipValue}`;
          overlay.style.position = 'absolute';
          overlay.style.left = chip.style.left;
          overlay.style.top = chip.style.top;
@@ -506,7 +576,7 @@
 
          // Update chip count and remove chip
          if (isOnChange) {
-           const chipsWon = chipValue * 5;
+           const chipsWon = chipValue * rewardMultiplier;
            chipCount += chipsWon;
            totalChipsWon += chipsWon - chipValue;
          }
@@ -552,7 +622,7 @@
          return;
        }
 
-       const chipValue = shiftKey ? Math.min(5, chipCount) : 1;
+       const chipValue = shiftKey ? Math.min(rewardMultiplier, chipCount) : 1;
        ghostChip.textContent = chipValue;
        ghostChip.style.display = 'flex';
        ghostChip.style.left = (lastMouseX - 20) + 'px';
@@ -615,7 +685,7 @@
        e.preventDefault();
 
        // Determine chip value based on Shift key
-       const chipsToPlace = e.shiftKey ? Math.min(5, chipCount) : 1;
+       const chipsToPlace = e.shiftKey ? Math.min(rewardMultiplier, chipCount) : 1;
 
        // Decrement chip count
        chipCount -= chipsToPlace;
@@ -675,7 +745,7 @@
 
          // Check if clicked on an existing placed chip (not moved)
          if (!hasMoved && !fromPile) {
-           const incrementAmount = Math.min(chipCount, isShiftKey ? 5 : 1);
+           const incrementAmount = Math.min(chipCount, isShiftKey ? rewardMultiplier : 1);
            draggedChip.textContent = parseInt(draggedChip.textContent) + incrementAmount;
            chipCount -= incrementAmount;
            document.getElementById('chipCount').textContent = chipCount;
@@ -742,7 +812,7 @@
        if (draggedChip != null) return;
 
        // Determine chip value based on Shift key
-       const chipsToPlace = Math.min(chipCount, e.shiftKey ? 5 : 1);
+       const chipsToPlace = Math.min(chipCount, e.shiftKey ? rewardMultiplier : 1);
 
        // Decrement chip count
        chipCount -= chipsToPlace;
@@ -814,6 +884,8 @@
          document.getElementById('countdown').textContent = count;
 
          countdownInterval = setInterval(() => {
+           if (isGameEnded || isPaused) { return; }
+
            count--;
            if (count > 0) {
              document.getElementById('countdown').textContent = count;
@@ -821,9 +893,17 @@
              if (count === 3) {
                playSound(countdownBuffer, 0.5);
              }
+             // Create particles for countdown 3, 2, 1
+             if (count <= 3) {
+               createCountdownParticles(count);
+             }
            } else {
+             document.getElementById('countdown').textContent = count;
+             createCountdownParticles(0);
              clearInterval(countdownInterval);
-             nextRevision();
+             setTimeout(() => {
+               nextRevision();
+             }, 100);
            }
          }, 1000);
        } else {
@@ -943,11 +1023,13 @@
      function updateShareUrl() {
        const chipCountInput = document.getElementById('chipCountInput').value;
        const countdownInput = document.getElementById('countdownInput').value;
-       if (selectedArticle && chipCountInput && countdownInput) {
+       const multiplierInput = document.getElementById('multiplierInput').value;
+       if (selectedArticle && chipCountInput && countdownInput && multiplierInput) {
          const params = new URLSearchParams({
            article: selectedArticle,
            chips: chipCountInput,
-           countdown: countdownInput
+           countdown: countdownInput,
+           multiplier: multiplierInput
          });
          const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
          document.getElementById('shareUrl').value = url;
@@ -979,6 +1061,7 @@
        pageTitle = selectedArticle;
        chipCount = parseInt(document.getElementById('chipCountInput').value);
        countdownTime = parseInt(document.getElementById('countdownInput').value);
+       rewardMultiplier = parseInt(document.getElementById('multiplierInput').value);
        startingChips = chipCount;
        totalChipsInserted = startingChips;
        totalChipsWon = 0;
@@ -1050,9 +1133,17 @@
              if (count === 3) {
                playSound(countdownBuffer, 0.5);
              }
+             // Create particles for countdown 3, 2, 1
+             if (count <= 3) {
+               createCountdownParticles(count);
+             }
            } else {
+             document.getElementById('countdown').textContent = count;
+             createCountdownParticles(0);
              clearInterval(countdownInterval);
-             nextRevision();
+             setTimeout(() => {
+               nextRevision();
+             }, 100);
            }
          }, 1000);
        }
@@ -1077,6 +1168,12 @@
 
      document.getElementById('countdownInput').addEventListener('input', () => {
        updateShareUrl();
+     });
+
+     document.getElementById('multiplierInput').addEventListener('input', () => {
+       updateShareUrl();
+       const multiplier = document.getElementById('multiplierInput').value;
+       document.getElementById('multiplierText').textContent = `${multiplier}x`;
      });
 
      document.getElementById('randomArticleBtn').addEventListener('click', loadRandomArticle);
@@ -1105,6 +1202,7 @@
      const articleParam = urlParams.get('article');
      const chipsParam = urlParams.get('chips');
      const countdownParam = urlParams.get('countdown');
+     const multiplierParam = urlParams.get('multiplier');
 
      if (articleParam) {
        document.getElementById('articleInput').value = articleParam;
@@ -1113,6 +1211,10 @@
        }
        if (countdownParam) {
          document.getElementById('countdownInput').value = countdownParam;
+       }
+       if (multiplierParam) {
+         document.getElementById('multiplierInput').value = multiplierParam;
+         document.getElementById('multiplierText').textContent = `${multiplierParam}x`;
        }
        checkArticleEdits(articleParam);
      } else {
@@ -1139,11 +1241,19 @@
                document.getElementById('countdown').textContent = count;
                // Play countdown sound when hitting 3
                if (count === 3) {
-                 playSound(countdownBuffer);
+                 playSound(countdownBuffer, 0.5);
+               }
+               // Create particles for countdown 3, 2, 1
+               if (count <= 3) {
+                 createCountdownParticles(count);
                }
              } else {
+               document.getElementById('countdown').textContent = count;
+               createCountdownParticles(0);
                clearInterval(countdownInterval);
-               nextRevision();
+               setTimeout(() => {
+                 nextRevision();
+               }, 100);
              }
            }, 1000);
          }
@@ -1169,6 +1279,8 @@
 
      // Shared function to show end game screen
      function showEndGameScreen() {
+       isGameEnded = true;
+
        clearInterval(countdownInterval);
        stopAllSounds();
        clearAllBets();
