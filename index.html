@@ -351,7 +351,7 @@
         </div>
         <div id="chipTray">
           <div id="chipPile" class="chip red">
-            <span id="chipCount">15</span>
+            <span id="chipPileCount">15</span>
           </div>
         </div>
         <div id="gameControls">
@@ -463,7 +463,7 @@
 
      // Countdown particle effects
      function createCountdownParticles(count) {
-       const countdownEl = document.getElementById('countdown');
+       const countdownEl = countdown;
        if (!countdownEl || count > 3 || count < 0) return;
 
        // Calculate intensity based on countdown (3=low, 2=medium, 1=high, 0=highest)
@@ -530,7 +530,7 @@
          const chip = placedChips[i];
 
          // Scroll chip into view if needed
-         const headerHeight = document.getElementById('header').offsetHeight;
+         const headerHeight = header.offsetHeight;
          chip.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
          const chipRect = chip.getBoundingClientRect();
@@ -590,7 +590,7 @@
          }
          chip.remove();
 
-         document.getElementById('chipCount').textContent = chipCount;
+         chipPileCount.textContent = chipCount;
 
          // Wait 300ms before next chip
          if (i < placedChips.length - 1) {
@@ -601,7 +601,7 @@
        // Check if game over
        if (chipCount === 0) {
          clearInterval(countdownInterval);
-         document.getElementById('gameOverScreen').classList.remove('hidden');
+         gameOverScreen.classList.remove('hidden');
        }
      }
 
@@ -697,7 +697,7 @@
 
        // Decrement chip count
        chipCount -= chipsToPlace;
-       document.getElementById('chipCount').textContent = chipCount;
+       chipPileCount.textContent = chipCount;
 
        // Create chip at click location
        const chip = document.createElement('div');
@@ -756,20 +756,19 @@
            const incrementAmount = Math.min(chipCount, isShiftKey ? rewardMultiplier : 1);
            draggedChip.textContent = parseInt(draggedChip.textContent) + incrementAmount;
            chipCount -= incrementAmount;
-           document.getElementById('chipCount').textContent = chipCount;
+           chipPileCount.textContent = chipCount;
            draggedChip = null;
            return;
          }
 
          // Check if pointer is inside header
-         const header = document.getElementById('header');
          const headerRect = header.getBoundingClientRect();
          if ((e.clientX >= headerRect.left && e.clientX <= headerRect.right &&
               e.clientY >= headerRect.top && e.clientY <= headerRect.bottom) ||
              e.clientX < 0 || e.clientY < 0) {
            // Put chip back in pile
            chipCount++;
-           document.getElementById('chipCount').textContent = chipCount;
+           chipPileCount.textContent = chipCount;
            chipPile.style.visibility = 'visible';
            if (draggedChip) {
              draggedChip.remove();
@@ -824,7 +823,7 @@
 
        // Decrement chip count
        chipCount -= chipsToPlace;
-       document.getElementById('chipCount').textContent = chipCount;
+       chipPileCount.textContent = chipCount;
 
        // Create dragging chip
        const chip = document.createElement('div');
@@ -879,7 +878,7 @@
 
        // Check if we're on the last revision - end the game
        if (currentRevisionIndex >= allRevisions.length - 1) {
-         document.getElementById('countdown').textContent = '';
+         countdown.textContent = '';
          clearInterval(countdownInterval);
          showEndGameScreen();
          return;
@@ -889,14 +888,14 @@
        if (chipCount > 0) {
          clearInterval(countdownInterval);
          let count = countdownTime;
-         document.getElementById('countdown').textContent = count;
+         countdown.textContent = count;
 
          countdownInterval = setInterval(() => {
            if (isGameEnded || isPaused) { return; }
 
            count--;
            if (count > 0) {
-             document.getElementById('countdown').textContent = count;
+             countdown.textContent = count;
              // Play countdown sound when hitting 3
              if (count === 3) {
                playSound(countdownBuffer, 0.5);
@@ -906,7 +905,7 @@
                createCountdownParticles(count);
              }
            } else {
-             document.getElementById('countdown').textContent = count;
+             countdown.textContent = count;
              createCountdownParticles(0);
              clearInterval(countdownInterval);
              setTimeout(() => {
@@ -915,7 +914,7 @@
            }
          }, 1000);
        } else {
-         document.getElementById('countdown').textContent = '';
+         countdown.textContent = '';
        }
      }
 
@@ -986,8 +985,8 @@
      // Start screen logic
      async function checkArticleEdits(articleName) {
        try {
-         document.getElementById('articleInfo').textContent = 'Checking article...';
-         document.getElementById('startGameBtn').disabled = true;
+         articleInfo.textContent = 'Checking article...';
+         startGameBtn.disabled = true;
 
          const historyUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(articleName)}&prop=revisions&rvlimit=1&format=json&origin=*`;
          const response = await fetch(historyUrl);
@@ -996,7 +995,7 @@
          const pageId = Object.keys(pages)[0];
 
          if (pageId === '-1') {
-           document.getElementById('articleInfo').textContent = 'Article not found. Please try another.';
+           articleInfo.textContent = 'Article not found. Please try another.';
            selectedArticle = null;
            updateShareUrl();
            return;
@@ -1018,65 +1017,65 @@
          }
 
          selectedArticle = articleName;
-         document.getElementById('articleInfo').textContent = `Found: "${articleName}" with ${revCount} edits`;
-         document.getElementById('startGameBtn').disabled = false;
+         articleInfo.textContent = `Found: "${articleName}" with ${revCount} edits`;
+         startGameBtn.disabled = false;
          updateShareUrl();
        } catch (error) {
-         document.getElementById('articleInfo').textContent = 'Error checking article: ' + error.message;
+         articleInfo.textContent = 'Error checking article: ' + error.message;
          selectedArticle = null;
          updateShareUrl();
        }
      }
 
      function updateShareUrl() {
-       const chipCountInput = document.getElementById('chipCountInput').value;
-       const countdownInput = document.getElementById('countdownInput').value;
-       const multiplierInput = document.getElementById('multiplierInput').value;
-       if (selectedArticle && chipCountInput && countdownInput && multiplierInput) {
+       const chipCountInputValue = chipCountInput.value;
+       const countdownInputValue = countdownInput.value;
+       const multiplierInputValue = multiplierInput.value;
+       if (selectedArticle && chipCountInputValue && countdownInputValue && multiplierInputValue) {
          const params = new URLSearchParams({
            article: selectedArticle,
-           chips: chipCountInput,
-           countdown: countdownInput,
-           multiplier: multiplierInput
+           chips: chipCountInputValue,
+           countdown: countdownInputValue,
+           multiplier: multiplierInputValue
          });
          const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-         document.getElementById('shareUrl').value = url;
+         shareUrl.value = url;
        } else {
-         document.getElementById('shareUrl').value = '';
+         shareUrl.value = '';
        }
      }
 
      async function loadRandomArticle() {
        try {
-         document.getElementById('randomArticleBtn').disabled = true;
-         document.getElementById('articleInfo').textContent = 'Loading random article...';
+         randomArticleBtn.disabled = true;
+         articleInfo.textContent = 'Loading random article...';
 
          const randomUrl = 'https://en.wikipedia.org/w/api.php?action=query&list=random&rnnamespace=0&rnlimit=1&format=json&origin=*';
          const response = await fetch(randomUrl);
          const data = await response.json();
          const articleName = data.query.random[0].title;
 
-         document.getElementById('articleInput').value = articleName;
+         articleInput.value = articleName;
          await checkArticleEdits(articleName);
        } catch (error) {
-         document.getElementById('articleInfo').textContent = 'Error loading random article: ' + error.message;
+         articleInfo.textContent = 'Error loading random article: ' + error.message;
        } finally {
-         document.getElementById('randomArticleBtn').disabled = false;
+         randomArticleBtn.disabled = false;
        }
      }
 
      function startGame() {
        pageTitle = selectedArticle;
-       chipCount = parseInt(document.getElementById('chipCountInput').value);
-       countdownTime = parseInt(document.getElementById('countdownInput').value);
-       rewardMultiplier = parseInt(document.getElementById('multiplierInput').value);
+       chipCount = parseInt(chipCountInput.value);
+       countdownTime = parseInt(countdownInput.value);
+       rewardMultiplier = parseInt(multiplierInput.value);
        startingChips = chipCount;
        totalChipsInserted = startingChips;
        totalChipsWon = 0;
-       document.getElementById('chipCount').textContent = chipCount;
+       chipPileCount.textContent = chipCount;
 
-       document.getElementById('startScreen').classList.add('hidden');
-       document.getElementById('container').classList.remove('hidden');
+       startScreen.classList.add('hidden');
+       container.classList.remove('hidden');
 
        fetchArticleEdits(pageTitle);
      }
@@ -1120,23 +1119,23 @@
      }
 
      // Event listener for game over screen
-     document.getElementById('continueBtn').addEventListener('click', () => {
-       const insertChips = parseInt(document.getElementById('insertChipsInput').value);
+     continueBtn.addEventListener('click', () => {
+       const insertChips = parseInt(insertChipsInput.value);
        chipCount += insertChips;
        totalChipsInserted += insertChips;
-       document.getElementById('chipCount').textContent = chipCount;
-       document.getElementById('gameOverScreen').classList.add('hidden');
+       chipPileCount.textContent = chipCount;
+       gameOverScreen.classList.add('hidden');
 
        // Restart countdown
        if (currentRevisionIndex < allRevisions.length - 1) {
          clearInterval(countdownInterval);
          let count = countdownTime;
-         document.getElementById('countdown').textContent = count;
+         countdown.textContent = count;
 
          countdownInterval = setInterval(() => {
            count--;
            if (count > 0) {
-             document.getElementById('countdown').textContent = count;
+             countdown.textContent = count;
              // Play countdown sound when hitting 3
              if (count === 3) {
                playSound(countdownBuffer, 0.5);
@@ -1146,7 +1145,7 @@
                createCountdownParticles(count);
              }
            } else {
-             document.getElementById('countdown').textContent = count;
+             countdown.textContent = count;
              createCountdownParticles(0);
              clearInterval(countdownInterval);
              setTimeout(() => {
@@ -1158,42 +1157,42 @@
      });
 
      // Event listeners for start screen
-     document.getElementById('articleInput').addEventListener('input', (e) => {
+     articleInput.addEventListener('input', (e) => {
        const value = e.target.value.trim();
        if (value) {
          checkArticleEdits(value);
        } else {
          selectedArticle = null;
-         document.getElementById('articleInfo').textContent = '';
-         document.getElementById('startGameBtn').disabled = true;
+         articleInfo.textContent = '';
+         startGameBtn.disabled = true;
          updateShareUrl();
        }
      });
 
-     document.getElementById('chipCountInput').addEventListener('input', () => {
+     chipCountInput.addEventListener('input', () => {
        updateShareUrl();
      });
 
-     document.getElementById('countdownInput').addEventListener('input', () => {
+     countdownInput.addEventListener('input', () => {
        updateShareUrl();
      });
 
-     document.getElementById('multiplierInput').addEventListener('input', () => {
+     multiplierInput.addEventListener('input', () => {
        updateShareUrl();
-       const multiplier = document.getElementById('multiplierInput').value;
-       document.getElementById('multiplierText').textContent = `${multiplier}x`;
+       const multiplier = multiplierInput.value;
+       multiplierText.textContent = `${multiplier}x`;
      });
 
-     document.getElementById('randomArticleBtn').addEventListener('click', loadRandomArticle);
-     document.getElementById('startGameBtn').addEventListener('click', startGame);
+     randomArticleBtn.addEventListener('click', loadRandomArticle);
+     startGameBtn.addEventListener('click', startGame);
 
      // Copy share URL button
-     document.getElementById('copyShareUrlBtn').addEventListener('click', async () => {
-       const shareUrl = document.getElementById('shareUrl').value;
-       if (shareUrl) {
+     copyShareUrlBtn.addEventListener('click', async () => {
+       const shareUrlValue = shareUrl.value;
+       if (shareUrlValue) {
          try {
-           await navigator.clipboard.writeText(shareUrl);
-           const btn = document.getElementById('copyShareUrlBtn');
+           await navigator.clipboard.writeText(shareUrlValue);
+           const btn = copyShareUrlBtn;
            const originalText = btn.textContent;
            btn.textContent = 'Copied!';
            setTimeout(() => {
@@ -1213,16 +1212,16 @@
      const multiplierParam = urlParams.get('multiplier');
 
      if (articleParam) {
-       document.getElementById('articleInput').value = articleParam;
+       articleInput.value = articleParam;
        if (chipsParam) {
-         document.getElementById('chipCountInput').value = chipsParam;
+         chipCountInput.value = chipsParam;
        }
        if (countdownParam) {
-         document.getElementById('countdownInput').value = countdownParam;
+         countdownInput.value = countdownParam;
        }
        if (multiplierParam) {
-         document.getElementById('multiplierInput').value = multiplierParam;
-         document.getElementById('multiplierText').textContent = `${multiplierParam}x`;
+         multiplierInput.value = multiplierParam;
+         multiplierText.textContent = `${multiplierParam}x`;
        }
        checkArticleEdits(articleParam);
      } else {
@@ -1231,22 +1230,22 @@
      }
 
      // Pause/Resume button
-     document.getElementById('pauseBtn').addEventListener('click', () => {
+     pauseBtn.addEventListener('click', () => {
        if (isPaused) {
          // Resume
          isPaused = false;
-         document.getElementById('pauseBtn').textContent = 'Pause';
+         pauseBtn.textContent = 'Pause';
 
          // Restart countdown from paused value
          if (currentRevisionIndex < allRevisions.length - 1 && chipCount > 0) {
            clearInterval(countdownInterval);
            let count = pausedCountdown;
-           document.getElementById('countdown').textContent = count;
+           countdown.textContent = count;
 
            countdownInterval = setInterval(() => {
              count--;
              if (count > 0) {
-               document.getElementById('countdown').textContent = count;
+               countdown.textContent = count;
                // Play countdown sound when hitting 3
                if (count === 3) {
                  playSound(countdownBuffer, 0.5);
@@ -1256,7 +1255,7 @@
                  createCountdownParticles(count);
                }
              } else {
-               document.getElementById('countdown').textContent = count;
+               countdown.textContent = count;
                createCountdownParticles(0);
                clearInterval(countdownInterval);
                setTimeout(() => {
@@ -1268,8 +1267,8 @@
        } else {
          // Pause
          isPaused = true;
-         document.getElementById('pauseBtn').textContent = 'Resume';
-         pausedCountdown = parseInt(document.getElementById('countdown').textContent) || 0;
+         pauseBtn.textContent = 'Resume';
+         pausedCountdown = parseInt(countdown.textContent) || 0;
          clearInterval(countdownInterval);
          stopAllSounds();
        }
@@ -1282,7 +1281,7 @@
          chipCount += chipValue;
          chip.remove();
        });
-       document.getElementById('chipCount').textContent = chipCount;
+       chipCount.textContent = chipCount;
      }
 
      // Shared function to show end game screen
@@ -1301,35 +1300,35 @@
        const netGain = chipCount - totalChipsInserted;
 
        // Populate end game screen
-       document.getElementById('endArticle').textContent = pageTitle;
-       document.getElementById('endRevision').textContent = `${currentRevisionIndex + 1} of ${allRevisions.length}`;
-       document.getElementById('endRevisionDate').textContent = revisionDate;
-       document.getElementById('endChipsInserted').textContent = totalChipsInserted;
-       document.getElementById('endChipsWon').textContent = totalChipsWon;
-       document.getElementById('endCurrentChips').textContent = chipCount;
-       document.getElementById('endNetGain').textContent = netGain >= 0 ? `+${netGain}` : netGain;
-       document.getElementById('endNetGain').style.color = netGain >= 0 ? 'green' : 'red';
+       endArticle.textContent = pageTitle;
+       endRevision.textContent = `${currentRevisionIndex + 1} of ${allRevisions.length}`;
+       endRevisionDate.textContent = revisionDate;
+       endChipsInserted.textContent = totalChipsInserted;
+       endChipsWon.textContent = totalChipsWon;
+       endCurrentChips.textContent = chipCount;
+       endNetGain.textContent = netGain >= 0 ? `+${netGain}` : netGain;
+       endNetGain.style.color = netGain >= 0 ? 'green' : 'red';
 
        // Hide other screens and show end game screen
-       document.getElementById('gameOverScreen').classList.add('hidden');
-       document.getElementById('endGameScreen').classList.remove('hidden');
+       gameOverScreen.classList.add('hidden');
+       endGameScreen.classList.remove('hidden');
      }
 
      // Clear all bets button
-     document.getElementById('clearBetsBtn').addEventListener('click', clearAllBets);
+     clearBetsBtn.addEventListener('click', clearAllBets);
 
      // End Game button
-     document.getElementById('endGameBtn').addEventListener('click', showEndGameScreen);
+     endGameBtn.addEventListener('click', showEndGameScreen);
 
      // End game from game over screen
-     document.getElementById('endGameFromOverBtn').addEventListener('click', showEndGameScreen);
+     endGameFromOverBtn.addEventListener('click', showEndGameScreen);
 
      // Return to Start button
-     document.getElementById('returnToStartBtn').addEventListener('click', () => {
-       document.getElementById('endGameScreen').classList.add('hidden');
-       document.getElementById('container').classList.add('hidden');
-       document.getElementById('startScreen').classList.remove('hidden');
-       document.getElementById('gameOverScreen').classList.add('hidden');
+     returnToStartBtn.addEventListener('click', () => {
+       endGameScreen.classList.add('hidden');
+       container.classList.add('hidden');
+       startScreen.classList.remove('hidden');
+       gameOverScreen.classList.add('hidden');
 
        // Reset game state
        allRevisions = [];
@@ -1339,7 +1338,7 @@
        pausedCountdown = 0;
        totalChipsInserted = 0;
        totalChipsWon = 0;
-       document.getElementById('pauseBtn').textContent = 'Pause';
+       pauseBtn.textContent = 'Pause';
 
        // Clear placed chips and content
        document.querySelectorAll('.placed-chip').forEach(chip => chip.remove());
