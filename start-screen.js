@@ -140,6 +140,9 @@ function startGame() {
   startScreen.classList.add('hidden');
   container.classList.remove('hidden');
 
+  // Start the countdown interval (only once)
+  startCountdownInterval();
+
   fetchArticleEdits(pageTitle);
 }
 

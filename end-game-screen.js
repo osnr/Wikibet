@@ -1,8 +1,8 @@
 // Shared function to show end game screen
 function showEndGameScreen() {
   isGameEnded = true;
+  isCountdownActive = false;
 
-  clearInterval(countdownInterval);
   stopAllSounds();
   clearAllBets();
 
@@ -49,7 +49,9 @@ returnToStartBtn.addEventListener('click', () => {
   revisionHtml = [];
   currentRevisionIndex = 0;
   isPaused = false;
-  pausedCountdown = 0;
+  isGameEnded = false;
+  isCountdownActive = false;
+  countdownValue = 0;
   totalChipsInserted = 0;
   totalChipsWon = 0;
   pauseBtn.textContent = 'Pause';

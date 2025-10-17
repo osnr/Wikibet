@@ -385,10 +385,11 @@
      let rewardMultiplier = 3;
      let isPaused = false;
      let isGameEnded = false;
-     let pausedCountdown = 0;
      let totalChipsInserted = 0;
      let totalChipsWon = 0;
      let startingChips = 5;
+     let countdownValue = 0;
+     let isCountdownActive = false;
 
      // Web Audio API setup for concurrent sound effects
      const audioCtx = new AudioContext();
@@ -518,6 +519,46 @@
      // Load audio on startup
      loadAudioBuffers();
 
+     // Start the interval once and keep it running
+     function startCountdownInterval() {
+       if (countdownInterval !== null) {
+         return; // Already running
+       }
+
+       countdownInterval = setInterval(() => {
+         if (!isCountdownActive || isGameEnded || isPaused) {
+           return; // Skip this tick
+         }
+
+         countdownValue--;
+         if (countdownValue > 0) {
+           countdown.textContent = countdownValue;
+           // Play countdown sound when hitting 3
+           if (countdownValue === 3) {
+             playSound(countdownBuffer, 0.5);
+           }
+           // Create particles for countdown 3, 2, 1
+           if (countdownValue <= 3) {
+             createCountdownParticles(countdownValue);
+           }
+         } else {
+           countdown.textContent = countdownValue;
+           createCountdownParticles(0);
+           isCountdownActive = false;
+           setTimeout(() => {
+             nextRevision();
+           }, 100);
+         }
+       }, 1000);
+     }
+
+     // Helper function to start countdown
+     function startCountdown(fromValue) {
+       countdownValue = fromValue;
+       countdown.textContent = countdownValue;
+       isCountdownActive = true;
+     }
+
      async function scoreRound() {
        // Check placed chips after content is rendered
        if (currentRevisionIndex == 0) {
@@ -600,7 +641,7 @@
 
        // Check if game over
        if (chipCount === 0) {
-         clearInterval(countdownInterval);
+         isCountdownActive = false;
          gameOverScreen.classList.remove('hidden');
        }
      }
@@ -843,6 +884,11 @@
      });
 
      async function displayRevision() {
+       // Safety check - ensure interval is started
+       if (countdownInterval === null) {
+         startCountdownInterval();
+       }
+
        let contentHtml;
 
        if (currentRevisionIndex === 0) {
@@ -879,40 +925,14 @@
        // Check if we're on the last revision - end the game
        if (currentRevisionIndex >= allRevisions.length - 1) {
          countdown.textContent = '';
-         clearInterval(countdownInterval);
+         isCountdownActive = false;
          showEndGameScreen();
          return;
        }
 
        // Start countdown (only if not game over)
        if (chipCount > 0) {
-         clearInterval(countdownInterval);
-         let count = countdownTime;
-         countdown.textContent = count;
-
-         countdownInterval = setInterval(() => {
-           if (isGameEnded || isPaused) { return; }
-
-           count--;
-           if (count > 0) {
-             countdown.textContent = count;
-             // Play countdown sound when hitting 3
-             if (count === 3) {
-               playSound(countdownBuffer, 0.5);
-             }
-             // Create particles for countdown 3, 2, 1
-             if (count <= 3) {
-               createCountdownParticles(count);
-             }
-           } else {
-             countdown.textContent = count;
-             createCountdownParticles(0);
-             clearInterval(countdownInterval);
-             setTimeout(() => {
-               nextRevision();
-             }, 100);
-           }
-         }, 1000);
+         startCountdown(countdownTime);
        } else {
          countdown.textContent = '';
        }
@@ -946,31 +966,7 @@
 
        // Restart countdown
        if (currentRevisionIndex < allRevisions.length - 1) {
-         clearInterval(countdownInterval);
-         let count = countdownTime;
-         countdown.textContent = count;
-
-         countdownInterval = setInterval(() => {
-           count--;
-           if (count > 0) {
-             countdown.textContent = count;
-             // Play countdown sound when hitting 3
-             if (count === 3) {
-               playSound(countdownBuffer, 0.5);
-             }
-             // Create particles for countdown 3, 2, 1
-             if (count <= 3) {
-               createCountdownParticles(count);
-             }
-           } else {
-             countdown.textContent = count;
-             createCountdownParticles(0);
-             clearInterval(countdownInterval);
-             setTimeout(() => {
-               nextRevision();
-             }, 100);
-           }
-         }, 1000);
+         startCountdown(countdownTime);
        }
      });
 
@@ -981,41 +977,11 @@
          // Resume
          isPaused = false;
          pauseBtn.textContent = 'Pause';
-
-         // Restart countdown from paused value
-         if (currentRevisionIndex < allRevisions.length - 1 && chipCount > 0) {
-           clearInterval(countdownInterval);
-           let count = pausedCountdown;
-           countdown.textContent = count;
-
-           countdownInterval = setInterval(() => {
-             count--;
-             if (count > 0) {
-               countdown.textContent = count;
-               // Play countdown sound when hitting 3
-               if (count === 3) {
-                 playSound(countdownBuffer, 0.5);
-               }
-               // Create particles for countdown 3, 2, 1
-               if (count <= 3) {
-                 createCountdownParticles(count);
-               }
-             } else {
-               countdown.textContent = count;
-               createCountdownParticles(0);
-               clearInterval(countdownInterval);
-               setTimeout(() => {
-                 nextRevision();
-               }, 100);
-             }
-           }, 1000);
-         }
+         // The interval will automatically resume ticking since isPaused is now false
        } else {
          // Pause
          isPaused = true;
          pauseBtn.textContent = 'Resume';
-         pausedCountdown = parseInt(countdown.textContent) || 0;
-         clearInterval(countdownInterval);
          stopAllSounds();
        }
      });
